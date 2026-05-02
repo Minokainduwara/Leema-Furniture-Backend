@@ -62,5 +62,11 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @ManyToOne
+    @JoinColumn(name = "handled_by")
+    private User handledBy;
+    @OneToMany(mappedBy = "order")
+    private List<OrderItem> orderItems;
+
 
 }

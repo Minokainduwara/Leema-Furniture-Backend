@@ -51,4 +51,8 @@ public class OrderController {
                               @RequestBody Map<String, String> body) {
         return orderService.updateStatus(id, body.get("status"));
     }
+    @GetMapping("/{userId}/orders")
+    public List<Order> getSellerOrders(@PathVariable Integer userId) {
+        return orderService.getSellerOrders(userId);
+    }
 }
