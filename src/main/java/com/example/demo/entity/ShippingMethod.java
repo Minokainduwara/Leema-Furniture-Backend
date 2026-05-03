@@ -1,14 +1,13 @@
 package com.example.demo.entity;
-
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "categories",
+@Table(name = "shipping_methods",
         indexes = {
-                @Index(name = "idx_slug", columnList = "slug"),
                 @Index(name = "idx_is_active", columnList = "is_active")
         }
 )
@@ -16,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Category {
+public class ShippingMethod {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,14 +27,21 @@ public class Category {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 500)
-    private String image;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal cost;
 
-    @Column(unique = true, length = 100)
-    private String slug;
+    @Column(name = "estimated_days")
+    private Integer estimatedDays;
+
+    @Column(name = "estimated_days_max")
+    private Integer estimatedDaysMax;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
+
+    // JSON array of supported countries
+    @Column(columnDefinition = "JSON")
+    private String countries;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -43,7 +49,6 @@ public class Category {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Auto timestamps
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

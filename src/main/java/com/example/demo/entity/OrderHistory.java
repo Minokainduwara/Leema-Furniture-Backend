@@ -5,10 +5,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications",
+@Table(name = "order_history",
         indexes = {
-                @Index(name = "idx_user_id", columnList = "user_id"),
-                @Index(name = "idx_is_read", columnList = "is_read"),
+                @Index(name = "idx_order_id", columnList = "order_id"),
                 @Index(name = "idx_created_at", columnList = "created_at")
         }
 )
@@ -16,32 +15,27 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Notification {
+public class OrderHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // Notification belongs to a user
+    // History belongs to one order
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
-    @Column(length = 50)
-    private String type;
-    // order_confirmation, shipment, delivery, return, etc.
-
-    @Column(length = 255)
-    private String title;
+    @Column(nullable = false, length = 50)
+    private String status;
 
     @Column(columnDefinition = "TEXT")
     private String message;
 
-    @Column(name = "is_read")
-    private Boolean isRead = false;
-
-    @Column(name = "read_at")
-    private LocalDateTime readAt;
+    // User/admin who changed the order
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "changed_by")
+    private User changedBy;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
