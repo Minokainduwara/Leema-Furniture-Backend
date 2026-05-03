@@ -1,41 +1,33 @@
 package com.example.demo.entity;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "categories",
+@Table(name = "system_settings",
         indexes = {
-                @Index(name = "idx_slug", columnList = "slug"),
-                @Index(name = "idx_is_active", columnList = "is_active")
+                @Index(name = "idx_setting_key", columnList = "setting_key")
         }
 )
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Category {
+public class SystemSetting {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String name;
+    @Column(name = "setting_key", nullable = false, unique = true, length = 100)
+    private String settingKey;
+
+    @Column(name = "setting_value", columnDefinition = "JSON")
+    private String settingValue;
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(length = 500)
-    private String image;
-
-    @Column(unique = true, length = 100)
-    private String slug;
-
-    @Column(name = "is_active")
-    private Boolean isActive = true;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -43,7 +35,6 @@ public class Category {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Auto timestamps
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
