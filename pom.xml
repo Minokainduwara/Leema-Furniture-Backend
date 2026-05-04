@@ -29,6 +29,7 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+
 		<!-- JPA -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -76,10 +77,12 @@
 		</dependency>
 
 		<!-- Lombok -->
+		<!-- Source: https://mvnrepository.com/artifact/org.projectlombok/lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<optional>true</optional>
+			<version>1.18.46</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<!-- Devtools -->
@@ -95,11 +98,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 	</dependencies>
