@@ -1,16 +1,19 @@
 package com.example.demo.entity;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inventory_logs")
-@Getter
-@Setter
-@AllArgsConstructor
+@Table(name = "inventory_logs",
+        indexes = {
+                @Index(name = "idx_product_id", columnList = "product_id"),
+                @Index(name = "idx_created_at", columnList = "created_at")
+        }
+)
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class InventoryLog {
 
@@ -18,21 +21,32 @@ public class InventoryLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private Integer productId;
+    // Product whose stock changed
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
-    private Integer quantityChange; // + or - stock
+    // Positive = increase, Negative = decrease
+    @Column(name = "quantity_change")
+    private Integer quantityChange;
 
-    private String reason; // PURCHASE, RETURN, ADJUSTMENT
+    @Column(length = 100)
+    private String reason;
+    // purchase, return, restock, damage, adjustment
 
-    private Integer orderId;
+    // Optional link to order
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
 
+    @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
-    public void onCreate() {
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 }

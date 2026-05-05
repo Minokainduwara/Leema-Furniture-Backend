@@ -1,43 +1,49 @@
 package com.example.demo.entity;
-
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
-@Getter
-@Setter
+@Table(name = "users",
+        indexes = {
+                @Index(name = "idx_email", columnList = "email"),
+                @Index(name = "idx_role", columnList = "role"),
+                @Index(name = "idx_status", columnList = "status")
+        }
+)
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@Builder
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
-    @Column(name = "profile_picture")
+    @Column(name = "profile_picture", length = 500)
     private String profilePicture;
 
     @Enumerated(EnumType.STRING)
-    private Role role = Role.USER;
+    @Column(nullable = false)
+    private Role role = Role.user;
 
     @Enumerated(EnumType.STRING)
-    private Status status = Status.ACTIVE;
+    @Column(nullable = false)
+    private Status status = Status.active;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -48,24 +54,30 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // Auto set timestamps
+    // Auto timestamps
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    // ENUMS
+    // ================= ENUMS =================
+
     public enum Role {
-        ADMIN,SELLER, USER, GUEST
+        admin,
+        user,
+        seller
     }
 
     public enum Status {
-        ACTIVE, INACTIVE, SUSPENDED, DELETED
+        active,
+        inactive,
+        suspended,
+        deleted
     }
 }
