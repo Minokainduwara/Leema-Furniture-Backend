@@ -1,50 +1,74 @@
 package com.example.demo.entity;
-
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "refunds")
+@Table(name = "refunds",
+        indexes = {
+                @Index(name = "idx_payment_id", columnList = "payment_id"),
+                @Index(name = "idx_order_id", columnList = "order_id"),
+                @Index(name = "idx_status", columnList = "status")
+        }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Refund {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "payment_id", nullable = false)
-    private Integer paymentId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id", nullable = false)
+    private Payment payment;
 
-    @Column(name = "order_id", nullable = false)
-    private Integer orderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
     @Column(length = 255)
     private String reason;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private RefundStatus status = RefundStatus.pending;
 
-    @Column(name = "gateway_refund_id", unique = true)
+    @Column(name = "gateway_refund_id", unique = true, length = 255)
     private String gatewayRefundId;
 
     @Column(name = "gateway_response", columnDefinition = "JSON")
     private String gatewayResponse;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public enum RefundStatus {
-        pending, processing, completed, failed, cancelled
+        pending,
+        processing,
+        completed,
+        failed,
+        cancelled
     }
 }
