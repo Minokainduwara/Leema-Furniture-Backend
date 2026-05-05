@@ -81,7 +81,7 @@ public class ProductService {
     }
 
     // UPDATE product
-    public Product updateProduct (
+    public Product updateProduct(
             Integer id,
             ProductUpdateRequest data,
             MultipartFile image
@@ -90,19 +90,31 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        product.setName(data.name);
-        product.setSku(data.sku);
-        product.setPrice(data.price);
-        product.setCost(data.cost);
-        product.setStock(data.stock);
-        product.setDescription(data.description);
-        product.setLongDescription(data.longDescription);
-        product.setStatus(ProductStatus.valueOf(data.status));
+        // ✅ FIX: use getters
+        if (data.getName() != null) product.setName(data.getName());
+        if (data.getSku() != null) product.setSku(data.getSku());
+        if (data.getPrice() != null) product.setPrice(data.getPrice());
+        if (data.getCost() != null) product.setCost(data.getCost());
+        if (data.getStock() != null) product.setStock(data.getStock());
+        if (data.getDescription() != null) product.setDescription(data.getDescription());
+        if (data.getLongDescription() != null)
+            product.setLongDescription(data.getLongDescription());
 
-        Category category = categoryRepository.findById(data.categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-        product.setCategory(category);
+        // ✅ FIX: safe enum conversion
+        if (data.getStatus() != null) {
+            product.setStatus(
+                    data.getStatus()
+            );
+        }
 
+        // Category
+        if (data.getCategoryId() != null) {
+            Category category = categoryRepository.findById(data.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            product.setCategory(category);
+        }
+
+        // Image upload
         if (image != null && !image.isEmpty()) {
             String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
             Path path = Paths.get("uploads/" + fileName);
@@ -113,7 +125,6 @@ public class ProductService {
 
         return productRepository.save(product);
     }
-
     // DELETE product
     public void deleteProduct(Integer id) {
         productRepository.deleteById(id);

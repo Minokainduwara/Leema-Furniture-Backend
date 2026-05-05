@@ -20,20 +20,19 @@ public class InventoryLog {
 
     private Integer productId;
 
-    private Integer quantityChange;
+    private Integer quantityChange; // + or - stock
 
-    private String reason; // purchase, return, restock, etc.
+    private String reason; // PURCHASE, RETURN, ADJUSTMENT
 
     private Integer orderId;
 
     private String notes;
 
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
-
-
 }

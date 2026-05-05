@@ -1,86 +1,29 @@
 package com.example.demo.dto.response;
 
+import com.example.demo.enums.ProductStatus;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 public class ProductUpdateRequest {
 
-    public String name;
-    public String sku;
-    public Double price;
-    public Double cost;
-    public Integer stock;
-    public String description;
-    public String longDescription;
-    public String status;
-    public Integer categoryId;
+    private String name;
 
-    public String getName() {
-        return name;
-    }
+    private String sku;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    private Double price;
 
-    public String getSku() {
-        return sku;
-    }
+    private Double cost;
 
-    public void setSku(String sku) {
-        this.sku = sku;
-    }
+    private Integer stock;
 
-    public Double getPrice() {
-        return price;
-    }
+    private String description;
 
-    public void setPrice(Double price) {
-        this.price = price;
-    }
+    private String longDescription;
 
-    public Double getCost() {
-        return cost;
-    }
+    private ProductStatus status;
 
-    public void setCost(Double cost) {
-        this.cost = cost;
-    }
-
-    public Integer getStock() {
-        return stock;
-    }
-
-    public void setStock(Integer stock) {
-        this.stock = stock;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getLongDescription() {
-        return longDescription;
-    }
-
-    public void setLongDescription(String longDescription) {
-        this.longDescription = longDescription;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public Integer getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Integer categoryId) {
-        this.categoryId = categoryId;
-    }
+    private Integer categoryId;
+    private String image;
 }

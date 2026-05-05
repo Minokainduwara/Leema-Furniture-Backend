@@ -1,6 +1,5 @@
 package com.example.demo.entity;
 
-import com.example.demo.entity.User;
 import com.example.demo.enums.RepairStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -20,33 +19,47 @@ public class Repair {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private Integer productId;
-    private Integer orderId;
+    // Customer who requested repair
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 
+    // Seller/technician handling repair
+    @ManyToOne
+    @JoinColumn(name = "handled_by")
+    private User handledBy;
+
+    // Repair related product (optional but useful)
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private Product product;
+
+    @Column(name = "issue_description")
     private String issueDescription;
 
     @Enumerated(EnumType.STRING)
     private RepairStatus status;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Column(name = "estimated_cost")
+    private Double estimatedCost;
 
-    @ManyToOne
-    @JoinColumn(name = "handled_by")
-    private User handledBy;
+    @Column(name = "actual_cost")
+    private Double actualCost;
 
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist
-    public void onCreate() {
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.status = RepairStatus.REQUESTED;
     }
 
     @PreUpdate
-    public void onUpdate() {
+    protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 }

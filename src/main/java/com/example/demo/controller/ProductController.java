@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.dto.response.ProductUpdateRequest;
 import com.example.demo.entity.Product;
+import com.example.demo.enums.ProductStatus;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,7 +88,7 @@ public class ProductController {
         data.setStock(stock);
         data.setDescription(description);
         data.setLongDescription(longDescription);
-        data.setStatus(status);
+        data.setStatus(ProductStatus.valueOf(status.toUpperCase()));
         data.setCategoryId(categoryId);
 
         return productService.updateProduct(id, data, image);
