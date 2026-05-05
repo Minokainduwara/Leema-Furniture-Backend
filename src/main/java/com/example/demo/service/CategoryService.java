@@ -46,7 +46,7 @@ public class CategoryService {
 
         existingCategory.setName(updatedCategory.getName());
         existingCategory.setDescription(updatedCategory.getDescription());
-        existingCategory.setImage(updatedCategory.getImage());
+
         existingCategory.setSlug(updatedCategory.getSlug());
         existingCategory.setIsActive(updatedCategory.getIsActive());
 

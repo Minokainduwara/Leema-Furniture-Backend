@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.response.ProductUpdateRequest;
 import com.example.demo.entity.Category;
 import com.example.demo.entity.Product;
 import com.example.demo.enums.ProductStatus;
@@ -7,7 +8,14 @@ import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -17,6 +25,8 @@ public class ProductService {
     private ProductRepository productRepository;
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private FileService fileService;
 
     public List<Product> getAllProducts() {
         return productRepository.findAll();
@@ -27,44 +37,81 @@ public class ProductService {
     }
 
     // CREATE product
-    public Product createProduct(Product product) {
-
-        // ensure category exists
-        if (product.getCategory() != null && product.getCategory().getId() != null) {
-            Category category = categoryRepository.findById(product.getCategory().getId())
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
-
-            product.setCategory(category);
+    public void createProduct(
+            String name,
+            String sku,
+            Double price,
+            Double cost,
+            Integer stock,
+            String description,
+            String longDescription,
+            String status,
+            Integer categoryId,
+            MultipartFile image
+    ) {
+        if (productRepository.findBySku(sku).isPresent()) {
+            throw new RuntimeException("SKU already exists");
         }
+        // save image
+        String imagePath = fileService.save(image);
 
-        return productRepository.save(product);
+        //  get category
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
+        //  create product
+        Product product = new Product();
+        product.setName(name);
+        product.setSku(sku);
+        product.setPrice(price);
+        product.setCost(cost);
+        product.setStock(stock);
+        product.setDescription(description);
+        product.setLongDescription(longDescription);
+        product.setStatus(ProductStatus.valueOf(status));
+        product.setImage(imagePath);
+        product.setCategory(category);
+
+        product.setCreatedAt(LocalDateTime.now());
+        product.setFeatured(false);
+        product.setRating(0.0);
+        product.setTotalSales(0);
+
+        productRepository.save(product);
     }
 
     // UPDATE product
-    public Product updateProduct(Integer id, Product updatedProduct) {
+    public Product updateProduct (
+            Integer id,
+            ProductUpdateRequest data,
+            MultipartFile image
+    ) throws IOException {
 
-        Product existing = getProductById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        existing.setName(updatedProduct.getName());
-        existing.setPrice(updatedProduct.getPrice());
-        existing.setCost(updatedProduct.getCost());
-        existing.setStock(updatedProduct.getStock());
-        existing.setSku(updatedProduct.getSku());
-        existing.setDescription(updatedProduct.getDescription());
-        existing.setLongDescription(updatedProduct.getLongDescription());
-        existing.setImage(updatedProduct.getImage());
-        existing.setImages(updatedProduct.getImages());
-        existing.setRating(updatedProduct.getRating());
-        existing.setTotalSales(updatedProduct.getTotalSales());
-        existing.setStatus(updatedProduct.getStatus());
+        product.setName(data.name);
+        product.setSku(data.sku);
+        product.setPrice(data.price);
+        product.setCost(data.cost);
+        product.setStock(data.stock);
+        product.setDescription(data.description);
+        product.setLongDescription(data.longDescription);
+        product.setStatus(ProductStatus.valueOf(data.status));
 
-        if (updatedProduct.getCategory() != null) {
-            Category category = categoryRepository.findById(updatedProduct.getCategory().getId())
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
-            existing.setCategory(category);
+        Category category = categoryRepository.findById(data.categoryId)
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+        product.setCategory(category);
+
+        if (image != null && !image.isEmpty()) {
+            String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
+            Path path = Paths.get("uploads/" + fileName);
+            Files.copy(image.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+
+            product.setImage("/uploads/" + fileName);
         }
 
-        return productRepository.save(existing);
+        return productRepository.save(product);
     }
 
     // DELETE product

@@ -15,6 +15,11 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
+
+    @GetMapping("/all")
+    public List<Order> getAllOrders() {
+        return orderService.getAllOrders();
+    }
     // GET /api/orders?userId=1
     @GetMapping
     public List<Order> getUserOrders(@RequestParam Integer userId,

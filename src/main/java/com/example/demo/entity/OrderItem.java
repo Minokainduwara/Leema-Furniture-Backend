@@ -1,5 +1,6 @@
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,9 +17,7 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id")
-    private Order order;
+
 
     @ManyToOne
     @JoinColumn(name = "product_id")
@@ -34,4 +33,8 @@ public class OrderItem {
     private Double tax;
 
     private Double total;
+    @JsonBackReference
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
 }

@@ -23,7 +23,7 @@ public class Category {
 
     private String description;
 
-    private String image;
+
 
     private String slug;
 

@@ -3,8 +3,9 @@ package com.example.demo.entity;
 import com.example.demo.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
+import com.example.demo.entity.OrderItem;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -53,8 +54,7 @@ public class Order {
     @Column(name = "admin_notes")
     private String adminNotes;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderItem> items;
+
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -65,8 +65,10 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "handled_by")
     private User handledBy;
-    @OneToMany(mappedBy = "order")
-    private List<OrderItem> orderItems;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<OrderItem> items=new ArrayList<>();
 
 
 }
