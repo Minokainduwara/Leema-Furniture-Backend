@@ -33,7 +33,19 @@ public class AdminUserService {
 
 
     public Page<AdminUserResponse> getAllUsers(String role, String status, String search, Pageable pageable) {
-        return userRepository.findWithFilters(role, status, search, pageable)
+
+        User.Role roleEnum = null;
+        User.Status statusEnum = null;
+
+        if (role != null) {
+            roleEnum = User.Role.valueOf(role.toUpperCase());
+        }
+
+        if (status != null) {
+            statusEnum = User.Status.valueOf(status.toUpperCase());
+        }
+
+        return userRepository.findWithFilters(roleEnum, statusEnum, search, pageable)
                 .map(this::toResponse);
     }
 

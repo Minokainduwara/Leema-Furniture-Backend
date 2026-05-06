@@ -57,6 +57,7 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success(adminUserService.updateUserRole(id, role)));
     }
 
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Integer id) {
         adminUserService.deleteUser(id);

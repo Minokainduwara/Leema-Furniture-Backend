@@ -29,8 +29,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')))
             """)
     Page<User> findWithFilters(
-            @Param("role")   String role,
-            @Param("status") String status,
+            @Param("role") User.Role role,
+            @Param("status") User.Status status,
             @Param("search") String search,
             Pageable pageable);
 
