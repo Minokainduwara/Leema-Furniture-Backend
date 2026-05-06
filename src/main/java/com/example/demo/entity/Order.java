@@ -1,4 +1,5 @@
 package com.example.demo.entity;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -71,11 +72,11 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status = OrderStatus.pending;
+    private OrderStatus status = OrderStatus.PENDING;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
-    private PaymentStatus paymentStatus = PaymentStatus.pending;
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
     @Column(name = "customer_notes", columnDefinition = "TEXT")
     private String customerNotes;
@@ -87,6 +88,7 @@ public class Order {
     @OneToMany(mappedBy = "order",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
+    @JsonManagedReference
     private List<OrderItem> orderItems;
 
     @Column(name = "created_at", updatable = false)
@@ -109,6 +111,9 @@ public class Order {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+    @ManyToOne
+    @JoinColumn(name = "handled_by")
+    private User handledBy;
 
     private String generateOrderNumber() {
         return "ORD-" + System.currentTimeMillis();
@@ -117,21 +122,21 @@ public class Order {
     // ================= ENUMS =================
 
     public enum OrderStatus {
-        pending,
-        confirmed,
-        processing,
-        shipped,
-        delivered,
-        cancelled,
-        refunded,
-        returned
+        PENDING,
+        CONFIRMED,
+        PROCESSING,
+        SHIPPED,
+        DELIVERED,
+        CANCELLED,
+        REFUNDED,
+        RETURNED
     }
 
     public enum PaymentStatus {
-        pending,
-        completed,
-        failed,
-        refunded,
-        cancelled
+        PENDING,
+        COMPLETED,
+        FAILED,
+        REFUNDED,
+        CANCELLED
     }
 }
