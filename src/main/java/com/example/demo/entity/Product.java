@@ -60,7 +60,7 @@ public class Product {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ProductStatus status = ProductStatus.active;
+    private ProductStatus status = ProductStatus.ACTIVE;
 
     @Column(precision = 3, scale = 2)
     private BigDecimal rating = BigDecimal.ZERO;
@@ -92,9 +92,9 @@ public class Product {
     // ================= ENUM =================
 
     public enum ProductStatus {
-        active,
-        inactive,
-        discontinued,
-        draft
+        ACTIVE,
+        INACTIVE,
+        DISCONTINUED,
+        DRAFT
     }
 }
