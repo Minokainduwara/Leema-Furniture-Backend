@@ -39,11 +39,11 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role = Role.CUSTOMER;
+    private Role role = Role.user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Status status = Status.ACTIVE;
+    private Status status = Status.active;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -69,15 +69,15 @@ public class User {
     // ================= ENUMS =================
 
     public enum Role {
-        ADMIN,
-        SELLER,
-        CUSTOMER
+        admin,
+        user,
+        seller
     }
 
     public enum Status {
-        ACTIVE,
-        INACTIVE,
-        SUSPENDED,
-        DELETED
+        active,
+        inactive,
+        suspended,
+        deleted
     }
 }
