@@ -28,9 +28,6 @@ public class Category {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 500)
-    private String image;
-
     @Column(unique = true, length = 100)
     private String slug;
 
