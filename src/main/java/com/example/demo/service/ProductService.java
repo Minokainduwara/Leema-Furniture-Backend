@@ -3,7 +3,7 @@ package com.example.demo.service;
 import com.example.demo.dto.response.ProductUpdateRequest;
 import com.example.demo.entity.Category;
 import com.example.demo.entity.Product;
-import com.example.demo.enums.ProductStatus;
+import com.example.demo.entity.Product.ProductStatus;
 import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,8 +41,8 @@ public class ProductService {
     public void createProduct(
             String name,
             String sku,
-            Double price,
-            Double cost,
+            BigDecimal price,
+            BigDecimal cost,
             Integer stock,
             String description,
             String longDescription,
@@ -74,7 +75,7 @@ public class ProductService {
 
         product.setCreatedAt(LocalDateTime.now());
         product.setFeatured(false);
-        product.setRating(0.0);
+        product.setRating(new BigDecimal("0.00"));
         product.setTotalSales(0);
 
         productRepository.save(product);
@@ -102,9 +103,7 @@ public class ProductService {
 
         // ✅ FIX: safe enum conversion
         if (data.getStatus() != null) {
-            product.setStatus(
-                    data.getStatus()
-            );
+            product.setStatus(data.getStatus());
         }
 
         // Category

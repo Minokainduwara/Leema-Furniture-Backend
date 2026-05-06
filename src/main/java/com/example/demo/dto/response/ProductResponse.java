@@ -2,12 +2,14 @@ package com.example.demo.dto.response;
 
 import com.example.demo.entity.Product;
 
+import java.math.BigDecimal;
+
 public class ProductResponse {
 
     private Integer id;
     private String name;
     private String sku;
-    private Double price;
+    private BigDecimal price;
     private Integer stock;
     private String image;
     private String categoryName;  // ⭐ IMPORTANT
@@ -54,11 +56,11 @@ public class ProductResponse {
         this.sku = sku;
     }
 
-    public Double getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(BigDecimal price) {
         this.price = price;
     }
 

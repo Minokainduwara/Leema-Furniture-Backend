@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.response.NotificationDTO;
 import com.example.demo.entity.Notification;
 import com.example.demo.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,37 +15,51 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    // GET /api/notifications?userId=1
+    // =========================
+    // GET ALL NOTIFICATIONS (DTO)
+    // =========================
     @GetMapping
-    public List<Notification> getNotifications(@RequestParam Integer userId) {
-        return notificationService.getUserNotifications(userId);
+    public List<NotificationDTO> getNotifications() {
+        return notificationService.getUserNotifications();
     }
 
-    // PATCH /api/notifications/{id}/read
+    // =========================
+    // MARK AS READ
+    // =========================
     @PatchMapping("/{id}/read")
     public String markAsRead(@PathVariable Integer id) {
         notificationService.markAsRead(id);
         return "Notification marked as read";
     }
 
-    // PATCH /api/notifications/read-all?userId=1
+    // =========================
+    // MARK ALL AS READ
+    // =========================
     @PatchMapping("/read-all")
     public String markAllAsRead(@RequestParam Integer userId) {
         notificationService.markAllAsRead(userId);
         return "All notifications marked as read";
     }
 
-    // DELETE /api/notifications/{id}
+    // =========================
+    // DELETE NOTIFICATION
+    // =========================
     @DeleteMapping("/{id}")
     public String deleteNotification(@PathVariable Integer id) {
         notificationService.deleteNotification(id);
         return "Notification deleted";
     }
+
+    // =========================
+    // CREATE NOTIFICATION
+    // =========================
     @PostMapping
-    public Notification createNotification(@RequestBody Notification notification) {
+    public NotificationDTO createNotification(@RequestBody Notification notification) {
         return notificationService.createNotification(notification);
     }
-    // GET /api/notifications/unread-count?userId=1
+    // =========================
+    // UNREAD COUNT
+    // =========================
     @GetMapping("/unread-count")
     public long getUnreadCount(@RequestParam Integer userId) {
         return notificationService.getUnreadCount(userId);

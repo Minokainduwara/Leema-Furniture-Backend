@@ -1,9 +1,12 @@
 package com.example.demo.service;
 
+import com.example.demo.entity.Notification;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.OrderItem;
 import com.example.demo.entity.User;
-import com.example.demo.enums.OrderStatus;
+import com.example.demo.entity.Order.OrderStatus;
+import com.example.demo.factory.NotificationFactory;
+import com.example.demo.repository.NotificationRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,9 @@ public class OrderService {
 
     @Autowired
     private InventoryLogService inventoryLogService;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     // ================= STATUS RULES =================
     private static final Map<OrderStatus, List<OrderStatus>> allowedTransitions = Map.of(
@@ -63,14 +69,14 @@ public class OrderService {
         order.setUser(user);
 
         // link items to order
-        if (order.getItems() != null) {
-            order.getItems().forEach(item -> item.setOrder(order));
+        if (order.getOrderItems() != null) {
+            order.getOrderItems().forEach(item -> item.setOrder(order));
         }
 
         Order savedOrder = orderRepository.save(order);
 
         // inventory deduction
-        for (OrderItem item : savedOrder.getItems()) {
+        for (OrderItem item : savedOrder.getOrderItems()) {
             inventoryLogService.createLog(
                     item.getProduct().getId(),
                     -item.getQuantity(),
@@ -92,7 +98,7 @@ public class OrderService {
         orderRepository.save(order);
 
         // restore stock
-        for (OrderItem item : order.getItems()) {
+        for (OrderItem item : order.getOrderItems()) {
             inventoryLogService.createLog(
                     item.getProduct().getId(),
                     item.getQuantity(),
@@ -126,9 +132,26 @@ public class OrderService {
             );
         }
 
-        order.setStatus(newStatus);
+        // store old status
+        OrderStatus oldStatus = order.getStatus();
 
-        return orderRepository.save(order);
+        order.setStatus(newStatus);
+        Order savedOrder = orderRepository.save(order);
+
+        // 🔥 CREATE NOTIFICATION AFTER SUCCESSFUL UPDATE
+        if (!oldStatus.equals(newStatus)) {
+
+            Notification notification =
+                    NotificationFactory.createOrderNotification(
+                            order.getUser(),
+                            newStatus.name(),
+                            order.getOrderNumber()
+                    );
+
+            notificationRepository.save(notification);
+        }
+
+        return savedOrder;
     }
 
     // ================= SELLER ORDERS =================

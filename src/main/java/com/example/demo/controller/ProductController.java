@@ -3,7 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.dto.response.ProductUpdateRequest;
 import com.example.demo.entity.Product;
-import com.example.demo.enums.ProductStatus;
+import com.example.demo.entity.Product.ProductStatus;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -45,8 +46,8 @@ public class ProductController {
     public ResponseEntity<?> createProduct(
             @RequestParam String name,
             @RequestParam String sku,
-            @RequestParam Double price,
-            @RequestParam Double cost,
+            @RequestParam BigDecimal price,
+            @RequestParam BigDecimal cost,
             @RequestParam Integer stock,
             @RequestParam String description,
             @RequestParam String longDescription,
@@ -69,8 +70,8 @@ public class ProductController {
             @PathVariable Integer id,
             @RequestParam String name,
             @RequestParam String sku,
-            @RequestParam Double price,
-            @RequestParam Double cost,
+            @RequestParam BigDecimal price,
+            @RequestParam BigDecimal cost,
             @RequestParam Integer stock,
             @RequestParam String description,
             @RequestParam String longDescription,
