@@ -32,7 +32,18 @@ public class AdminProductService {
 
     public Page<ProductResponse> getAllProducts(String status, Integer categoryId,
                                                 Pageable pageable) {
-        return productRepository.findWithAdminFilters(Product.ProductStatus.valueOf(status), categoryId, pageable)
+
+        Product.ProductStatus productStatus = null;
+
+        if (status != null && !status.isBlank()) {
+            try {
+                productStatus = Product.ProductStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid status: " + status);
+            }
+        }
+
+        return productRepository.findWithAdminFilters(productStatus, categoryId, pageable)
                 .map(this::toResponse);
     }
 
