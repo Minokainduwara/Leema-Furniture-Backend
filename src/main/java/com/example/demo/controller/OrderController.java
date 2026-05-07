@@ -60,4 +60,28 @@ public class OrderController {
     public List<Order> getSellerOrders(@PathVariable Integer userId) {
         return orderService.getSellerOrders(userId);
     }
+    // 🔎 SEARCH
+    @GetMapping("/search")
+    public List<Order> searchOrders(@RequestParam String query) {
+        return orderService.searchOrders(query);
+    }
+
+    // 📊 STATUS FILTER
+    @GetMapping("/status")
+    public List<Order> getByStatus(@RequestParam Order.OrderStatus status) {
+        return orderService.getOrdersByStatus(status);
+    }
+
+    // 📅 DATE FILTER
+    @GetMapping("/filter")
+    public List<Order> filterByDate(@RequestParam String type) {
+        return orderService.filterByDate(type);
+    }
+    @PatchMapping("/{id}/payment-status")
+    public Order updatePaymentStatus(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> body
+    ) {
+        return orderService.updatePaymentStatus(id, body.get("paymentStatus"));
+    }
 }

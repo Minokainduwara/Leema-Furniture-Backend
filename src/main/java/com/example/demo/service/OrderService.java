@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -157,5 +158,51 @@ public class OrderService {
     // ================= SELLER ORDERS =================
     public List<Order> getSellerOrders(Integer userId) {
         return orderRepository.findByHandledById(userId);
+    }
+    public List<Order> searchOrders(String query) {
+        return orderRepository
+                .findByOrderNumberContainingIgnoreCaseOrUser_NameContainingIgnoreCase(
+                        query,
+                        query
+                );
+    }
+
+    // 📊 STATUS METHOD
+    public List<Order> getOrdersByStatus(OrderStatus status) {
+        return orderRepository.findByStatus(status);
+    }
+
+    // 📅 DATE FILTER METHOD
+    public List<Order> filterByDate(String type) {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (type.equalsIgnoreCase("TODAY")) {
+
+            LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+            return orderRepository.findByCreatedAtGreaterThanEqual(startOfDay);
+
+        } else if (type.equalsIgnoreCase("WEEK")) {
+
+            LocalDateTime startOfWeek = now.minusDays(7);
+            return orderRepository.findByCreatedAtGreaterThanEqual(startOfWeek);
+
+        } else if (type.equalsIgnoreCase("MONTH")) {
+
+            LocalDateTime startOfMonth = now.minusMonths(1);
+            return orderRepository.findByCreatedAtGreaterThanEqual(startOfMonth);
+
+        }
+
+        return List.of();
+    }
+    public Order updatePaymentStatus(Integer id, String status) {
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        order.setPaymentStatus(Order.PaymentStatus.valueOf(status.toUpperCase()));
+
+        return orderRepository.save(order);
     }
 }

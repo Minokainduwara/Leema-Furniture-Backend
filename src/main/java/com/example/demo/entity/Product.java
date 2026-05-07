@@ -1,7 +1,9 @@
 package com.example.demo.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-
+import java.util.List;
+import com.example.demo.entity.OrderItem;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -77,6 +79,10 @@ public class Product {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @OneToMany(mappedBy = "product")
+    @JsonIgnore
+    private List<OrderItem> orderItems;
 
     // Auto timestamps
     @PrePersist
