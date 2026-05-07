@@ -36,7 +36,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     // ── Analytics: count by status string ────────────────────────────────────
     @Query("SELECT COUNT(u) FROM User u WHERE u.status = :status")
-    long countByStatus(@Param("status") String status);
+    long countByStatus(@Param("status") User.Status status);
 
     // ── Analytics: new users this month ──────────────────────────────────────
     @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt BETWEEN :from AND :to")
