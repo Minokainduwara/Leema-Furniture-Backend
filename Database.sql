@@ -725,7 +725,27 @@ CREATE TABLE system_settings (
 )
 
 ALTER TABLE products ADD COLUMN featured BOOLEAN DEFAULT 0;
+ALTER TABLE orders
+    ADD handled_by INT,
+ADD CONSTRAINT fk_orders_handled_by
+FOREIGN KEY (handled_by) REFERENCES users(id);
 
+
+ALTER TABLE inventory_logs
+    ADD updated_by INT,
+ADD FOREIGN KEY (updated_by) REFERENCES users(id);
+order_id INT,
+  handled_by INT,
+  issue_description TEXT,
+  status ENUM('REQUESTED','IN_PROGRESS','COMPLETED','REJECTED') DEFAULT 'REQUESTED',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                                                                 FOREIGN KEY (user_id) REFERENCES users(id),
+                                                                 FOREIGN KEY (product_id) REFERENCES products(id),
+                                                                 FOREIGN KEY (order_id) REFERENCES orders(id),
+                                                                 FOREIGN KEY (handled_by) REFERENCES users(id)
+                                                                 );
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- ─── CREATE INDEXES FOR PERFORMANCE ───────────────────────────────────────────
 -- ═══════════════════════════════════════════════════════════════════════════════

@@ -88,7 +88,7 @@ public class CouponService {
 		}
 
 		if (coupon.getApplicableTo() == Coupon.ApplicableTo.SPECIFIC_PRODUCTS) {
-			List<Integer> allowedProductIds = couponProductRepository.findByCouponId(coupon.getId()).stream()
+			List<Integer> allowedProductIds = couponProductRepository.findByCoupon_Id(coupon.getId()).stream()
 					.map(com.example.demo.entity.CouponProduct::getProductId)
 					.filter(java.util.Objects::nonNull)
 					.toList();

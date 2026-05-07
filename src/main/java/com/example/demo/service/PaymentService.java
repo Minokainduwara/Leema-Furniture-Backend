@@ -49,7 +49,7 @@ public class PaymentService {
     public PaymentMethod setDefaultMethod(Integer id) {
         return paymentMethodRepository.findById(id).map(m -> {
             // Unset other defaults for this user
-            List<PaymentMethod> others = paymentMethodRepository.findByUserId(m.getUserId());
+            List<PaymentMethod> others = paymentMethodRepository.findByUserId(m.getUser().getId());
             others.forEach(o -> o.setIsDefault(false));
             paymentMethodRepository.saveAll(others);
             

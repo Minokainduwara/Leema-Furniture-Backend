@@ -1,4 +1,5 @@
 package com.example.demo.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -12,7 +13,8 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_is_default", columnList = "is_default")
         }
 )
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -73,8 +75,9 @@ public class PaymentMethod {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate
@@ -83,12 +86,12 @@ public class PaymentMethod {
     }
 
     public enum MethodType {
-        credit_card,
-        debit_card,
-        paypal,
-        stripe,
-        bank_transfer,
-        apple_pay,
-        google_pay
+        CREDIT_CARD,
+        DEBIT_CARD,
+        PAYPAL,
+        STRIPE,
+        BANK_TRANSFER,
+        APPLE_PAY,
+        GOOGLE_PAY
     }
 }
