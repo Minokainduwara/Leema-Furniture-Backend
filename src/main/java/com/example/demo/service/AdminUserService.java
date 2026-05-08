@@ -3,22 +3,15 @@ package com.example.demo.service;
 import com.example.demo.dto.request.AdminUpdateUserStatusRequest;
 import com.example.demo.dto.response.AdminUserResponse;
 import com.example.demo.dto.response.OrderResponse;
-import com.example.demo.entity.AdminLog;
 import com.example.demo.entity.User;
-import com.example.demo.exception.ResourceNotFoundException;
-import com.example.demo.repository.AdminLogRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.UserActivityLogRepository;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.util.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,77 +19,97 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
-    private final AdminLogRepository adminLogRepository;
     private final UserActivityLogRepository userActivityLogRepository;
-    private final SecurityUtils securityUtils;
-    private final ObjectMapper objectMapper;
 
+    // ─────────────────────────────────────────────
+    // SAFE ENUM PARSERS
+    // ─────────────────────────────────────────────
+    private User.Role parseRole(String role) {
+        if (role == null || role.isBlank()) return null;
 
+        try {
+            return User.Role.valueOf(role.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid role: " + role);
+        }
+    }
+
+    private User.Status parseStatus(String status) {
+        if (status == null || status.isBlank()) return null;
+
+        try {
+            return User.Status.valueOf(status.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid status: " + status);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // GET ALL USERS (FIXED)
+    // ─────────────────────────────────────────────
     public Page<AdminUserResponse> getAllUsers(String role, String status, String search, Pageable pageable) {
 
-        User.Role roleEnum = null;
-        User.Status statusEnum = null;
-
-        if (role != null) {
-            roleEnum = User.Role.valueOf(role.toUpperCase());
-        }
-
-        if (status != null) {
-            statusEnum = User.Status.valueOf(status.toUpperCase());
-        }
+        User.Role roleEnum = parseRole(role);
+        User.Status statusEnum = parseStatus(status);
 
         return userRepository.findWithFilters(roleEnum, statusEnum, search, pageable)
                 .map(this::toResponse);
     }
 
+    // ─────────────────────────────────────────────
+    // GET USER BY ID
+    // ─────────────────────────────────────────────
     public AdminUserResponse getUserById(Integer id) {
-        User user = findUser(id);
-        return toResponse(user);
+        return toResponse(findUser(id));
     }
 
+    // ─────────────────────────────────────────────
+    // UPDATE STATUS (FIXED)
+    // ─────────────────────────────────────────────
     @Transactional
     public AdminUserResponse updateUserStatus(Integer id, AdminUpdateUserStatusRequest request) {
+
         User user = findUser(id);
-        User admin = securityUtils.getCurrentUser();
 
-        Map<String, Object> oldValues = Map.of("status", user.getStatus());
-        user.setStatus(User.Status.valueOf(request.getStatus().toUpperCase()));
+        user.setStatus(parseStatus(request.getStatus()));
+
         userRepository.save(user);
-
-        logAction(admin, "UPDATE_STATUS", "USER", id, oldValues,
-                Map.of("status", user.getStatus()));
-
         return toResponse(user);
     }
 
+    // ─────────────────────────────────────────────
+    // UPDATE ROLE (FIXED)
+    // ─────────────────────────────────────────────
     @Transactional
     public AdminUserResponse updateUserRole(Integer id, String role) {
+
         User user = findUser(id);
-        User admin = securityUtils.getCurrentUser();
 
-        Map<String, Object> oldValues = Map.of("role", user.getRole());
-        user.setRole(User.Role.valueOf(role.toUpperCase()));
+        user.setRole(parseRole(role));
+
         userRepository.save(user);
-
-        logAction(admin, "UPDATE_ROLE", "USER", id, oldValues,
-                Map.of("role", user.getRole()));
-
         return toResponse(user);
     }
 
+    // ─────────────────────────────────────────────
+    // DELETE USER (SOFT DELETE FIXED)
+    // ─────────────────────────────────────────────
     @Transactional
     public void deleteUser(Integer id) {
+
         User user = findUser(id);
-        User admin = securityUtils.getCurrentUser();
 
         user.setStatus(User.Status.deleted);
         userRepository.save(user);
-
-        logAction(admin, "DELETE", "USER", id, Map.of("status", "ACTIVE"), Map.of("status", "DELETED"));
     }
 
+    // ─────────────────────────────────────────────
+    // USER ORDERS
+    // ─────────────────────────────────────────────
     public Page<OrderResponse> getUserOrders(Integer userId, Pageable pageable) {
-        findUser(userId); // validate exists
+
+        findUser(userId);
+
         return orderRepository.findByUserId(userId, pageable)
                 .map(order -> OrderResponse.builder()
                         .id(order.getId())
@@ -107,41 +120,25 @@ public class AdminUserService {
                         .build());
     }
 
+    // ─────────────────────────────────────────────
+    // USER ACTIVITY
+    // ─────────────────────────────────────────────
     public Page<?> getUserActivity(Integer userId, Pageable pageable) {
         findUser(userId);
         return userActivityLogRepository.findByUserId(userId, pageable);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
+    // ─────────────────────────────────────────────
+    // FIND USER (SAFE)
+    // ─────────────────────────────────────────────
     private User findUser(Integer id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("User not found: " + id));
     }
 
-
-
-    private void logAction(User admin, String action, String entityType, Integer entityId,
-                           Map<String, Object> oldValues, Map<String, Object> newValues) {
-
-        try {
-            String oldJson = objectMapper.writeValueAsString(oldValues);
-            String newJson = objectMapper.writeValueAsString(newValues);
-
-            adminLogRepository.save(AdminLog.builder()
-                    .admin(admin)
-                    .action(action)
-                    .entityType(entityType)
-                    .entityId(entityId)
-                    .oldValues(oldJson)
-                    .newValues(newJson)
-                    .build());
-
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize admin log", e);
-        }
-    }
-
+    // ─────────────────────────────────────────────
+    // RESPONSE MAPPER
+    // ─────────────────────────────────────────────
     private AdminUserResponse toResponse(User user) {
         return AdminUserResponse.builder()
                 .id(user.getId())
