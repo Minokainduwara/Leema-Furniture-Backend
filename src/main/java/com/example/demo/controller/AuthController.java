@@ -1,10 +1,11 @@
+/*
 package com.example.demo.controller;
 
 import com.example.demo.dto.request.LoginRequest;
 import com.example.demo.dto.request.RegisterRequest;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.security.JwtUtil;
+//import com.example.demo.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,10 +19,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
+   // private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+   // private final JwtUtil jwtUtil;
 
     // ───────────────────────── LOGIN ─────────────────────────
     @PostMapping("/login")
@@ -114,3 +115,6 @@ public class AuthController {
         );
     }
 }
+
+
+ */

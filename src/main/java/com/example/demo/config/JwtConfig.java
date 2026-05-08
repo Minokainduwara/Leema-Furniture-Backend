@@ -1,3 +1,4 @@
+/*
 package com.example.demo.config;
 public class JwtConfig {
 
@@ -7,3 +8,6 @@ public class JwtConfig {
     public static final long EXPIRATION =
             1000 * 60 * 60 * 24 * 24; // 24h
 }
+
+
+ */
