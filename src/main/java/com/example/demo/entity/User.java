@@ -39,7 +39,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role = Role.ROLE_USER;
+    private Role role = Role.admin;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -69,9 +69,9 @@ public class User {
     // ================= ENUMS =================
 
     public enum Role {
-        ROLE_ADMIN,
-        ROLE_USER,
-        ROLE_SELLER
+        admin,
+        user,
+        seller
     }
 
     public enum Status {

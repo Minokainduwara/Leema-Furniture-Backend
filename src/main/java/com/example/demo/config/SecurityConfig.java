@@ -1,3 +1,4 @@
+/*
 package com.example.demo.config;
 
 import com.example.demo.security.JwtAuthenticationFilter;
@@ -87,3 +88,5 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 }
+
+*/

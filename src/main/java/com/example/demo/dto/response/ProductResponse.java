@@ -1,4 +1,5 @@
 package com.example.demo.dto.response;
+import com.example.demo.entity.Product;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -55,13 +56,41 @@ public class ProductResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProductAttributeResponse {
-        private Integer id;
-        private String attributeName;
-        private String attributeValue;
+    public ProductResponse(Product product) {
+        this.id = product.getId();
+        this.name = product.getName();
+
+        // Category (SAFE)
+        if (product.getCategory() != null) {
+            this.categoryId = product.getCategory().getId();
+            this.categoryName = product.getCategory().getName();
+        }
+
+
+
+        // Pricing (SAFE)
+        this.price = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
+        this.cost = product.getCost();
+
+        // Inventory (SAFE)
+        this.stock = product.getStock() != null ? product.getStock() : 0;
+        this.sku = product.getSku();
+
+        // Content
+        this.description = product.getDescription();
+        this.longDescription = product.getLongDescription();
+        this.image = product.getImage();
+
+        // Status (SAFE)
+        this.status = product.getStatus() != null ? product.getStatus().name() : null;
+
+        // Stats (SAFE — THIS IS COMMON CRASH POINT)
+        this.rating = product.getRating() != null ? product.getRating() : BigDecimal.ZERO;
+        this.totalSales = product.getTotalSales() != null ? product.getTotalSales() : 0;
+
+        // Dates (SAFE)
+        this.createdAt = product.getCreatedAt();
+        this.updatedAt = product.getUpdatedAt();
     }
-}
+    }
+

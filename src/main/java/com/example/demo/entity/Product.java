@@ -1,10 +1,11 @@
 package com.example.demo.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-
+import java.util.List;
+import com.example.demo.entity.OrderItem;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "products",
@@ -53,6 +54,8 @@ public class Product {
 
     @Column(length = 500)
     private String image;
+    @Column(name = "featured")
+    private Boolean featured = false;
 
     // JSON column (requires converter or Hibernate support)
     @Column(columnDefinition = "JSON")
@@ -76,6 +79,10 @@ public class Product {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @OneToMany(mappedBy = "product")
+    @JsonIgnore
+    private List<OrderItem> orderItems;
 
     // Auto timestamps
     @PrePersist

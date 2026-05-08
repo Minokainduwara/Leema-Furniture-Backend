@@ -1,69 +1,124 @@
 package com.example.demo.controller.Admin;
 
-import com.example.demo.dto.request.AdminUpdateProductStatusRequest;
-import com.example.demo.dto.request.ProductRequest;
-import com.example.demo.dto.response.ApiResponse;
-import com.example.demo.service.AdminProductService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
+import com.example.demo.dto.response.ProductResponse;
+import com.example.demo.dto.response.ProductUpdateRequest;
+import com.example.demo.entity.Product;
+import com.example.demo.entity.Product.ProductStatus;
+import com.example.demo.repository.ProductRepository;
+import com.example.demo.service.ProductService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/products")
-@PreAuthorize("hasRole('ADMIN')")
-@RequiredArgsConstructor
+@RequestMapping("/api/products")
+@CrossOrigin(origins = "*")
 public class AdminProductController {
-    private final AdminProductService adminProductService;
 
+    @Autowired
+    private ProductService productService;
+    @Autowired
+    private ProductRepository productRepository;
+
+    // GET /api/products
     @GetMapping
-    public ResponseEntity<?> getAllProducts(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Integer categoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
-
-        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-        Pageable pageable = PageRequest.of(page, size, sort);
-        return ResponseEntity.ok(ApiResponse.success(
-                adminProductService.getAllProducts(status, categoryId, pageable)));
+    public List<ProductResponse> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(ProductResponse::new)
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProduct(@PathVariable Integer id) {
-        return ResponseEntity.ok(ApiResponse.success(adminProductService.getProduct(id)));
-    }
-
-    @PostMapping
-    public ResponseEntity<?> createProduct(@Valid @RequestBody ProductRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(adminProductService.createProduct(request)));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable Integer id,
-                                           @RequestBody ProductRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(adminProductService.updateProduct(id, request)));
-    }
-
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<?> updateProductStatus(@PathVariable Integer id,
-                                                 @Valid @RequestBody AdminUpdateProductStatusRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(adminProductService.updateProductStatus(id, request.getStatus())));
+    public ProductResponse getProductById(@PathVariable Integer id) {
+        return new ProductResponse(productService.getProductById(id));
     }
 
 
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createProduct(
+            @RequestParam String name,
+            @RequestParam String sku,
+            @RequestParam BigDecimal price,
+            @RequestParam BigDecimal cost,
+            @RequestParam Integer stock,
+            @RequestParam String description,
+            @RequestParam String longDescription,
+            @RequestParam String status,
+            @RequestParam Integer categoryId,
+            @RequestParam MultipartFile image
+    ) {
+        productService.createProduct(
+                name, sku, price, cost, stock,
+                description, longDescription,
+                status, categoryId, image
+        );
+
+        return ResponseEntity.ok("Product created successfully");
+    }
+
+    // UPDATE product
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Product updateProduct(
+            @PathVariable Integer id,
+            @RequestParam String name,
+            @RequestParam String sku,
+            @RequestParam BigDecimal price,
+            @RequestParam BigDecimal cost,
+            @RequestParam Integer stock,
+            @RequestParam String description,
+            @RequestParam String longDescription,
+            @RequestParam String status,
+            @RequestParam Integer categoryId,
+            @RequestParam(required = false) MultipartFile image
+    ) throws IOException {
+
+        ProductUpdateRequest data = new ProductUpdateRequest();
+
+        data.setName(name);
+        data.setSku(sku);
+        data.setPrice(price);
+        data.setCost(cost);
+        data.setStock(stock);
+        data.setDescription(description);
+        data.setLongDescription(longDescription);
+        data.setStatus(ProductStatus.valueOf(status.toUpperCase()));
+        data.setCategoryId(categoryId);
+
+        return productService.updateProduct(id, data, image);
+    }
+    // DELETE product
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Integer id) {
-        adminProductService.deleteProduct(id);
-        return ResponseEntity.ok(ApiResponse.success("Product deleted successfully"));
+    public void deleteProduct(@PathVariable Integer id) {
+        productService.deleteProduct(id);
+    }
+    // GET /api/products/search?keyword=sofa
+    @GetMapping("/search")
+    public List<Product> searchProducts(@RequestParam String keyword) {
+        return productService.searchProducts(keyword);
+    }
+
+    // GET /api/products/featured
+    @GetMapping("/featured")
+    public List<Product> getFeaturedProducts() {
+        return productService.getFeaturedProducts();
+    }
+
+    // GET /api/products/{id}/related
+    @GetMapping("/{id}/related")
+    public List<Product> getRelatedProducts(@PathVariable Integer id) {
+        return productService.getRelatedProducts(id);
+    }
+    @PatchMapping("/{id}/status")
+    public Product updateStatus(@PathVariable Integer id,
+                                @RequestBody Map<String, String> body) {
+        return productService.updateStatus(id, body.get("status"));
     }
 }
-

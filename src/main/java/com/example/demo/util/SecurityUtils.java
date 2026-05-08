@@ -1,4 +1,4 @@
-package com.example.demo.util;
+/*package com.example.demo.util;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,3 +24,4 @@ public class SecurityUtils {
                 .orElseThrow(() -> new RuntimeException("User not found in security context"));
     }
 }
+*/
