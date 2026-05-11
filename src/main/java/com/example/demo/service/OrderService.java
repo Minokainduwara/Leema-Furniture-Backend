@@ -76,14 +76,15 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // inventory deduction
+        // 🔻 REDUCE STOCK WHEN ORDER CREATED
         for (OrderItem item : savedOrder.getOrderItems()) {
+
             inventoryLogService.createLog(
                     item.getProduct().getId(),
                     -item.getQuantity(),
                     "PURCHASE",
                     savedOrder.getId(),
-                    "Order placed"
+                    "Stock reduced when order placed"
             );
         }
 
@@ -95,51 +96,51 @@ public class OrderService {
 
         Order order = getOrderById(id);
 
+        OrderStatus oldStatus = order.getStatus();
+
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
-        // restore stock
-        for (OrderItem item : order.getOrderItems()) {
-            inventoryLogService.createLog(
-                    item.getProduct().getId(),
-                    item.getQuantity(),
-                    "RETURN",
-                    order.getId(),
-                    "Order cancelled"
-            );
+        // 🔺 RESTORE STOCK
+        if (oldStatus != OrderStatus.CANCELLED) {
+            for (OrderItem item : order.getOrderItems()) {
+
+                inventoryLogService.createLog(
+                        item.getProduct().getId(),
+                        item.getQuantity(),
+                        "CANCELLED",
+                        order.getId(),
+                        "Stock restored due to cancellation"
+                );
+            }
         }
     }
 
-    // ================= INVOICE =================
-    public String generateInvoice(Integer id) {
-        Order order = getOrderById(id);
-        return "Invoice for Order ID: " + order.getId();
-    }
-
-    // ================= UPDATE STATUS (SAFE) =================
+    // ================= UPDATE STATUS =================
     public Order updateStatus(Integer id, String status) {
 
         Order order = getOrderById(id);
 
         OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
-        OrderStatus currentStatus = order.getStatus();
+        OrderStatus oldStatus = order.getStatus();
 
-        List<OrderStatus> allowed = allowedTransitions.get(currentStatus);
+        // ✅ VALIDATION
+        List<OrderStatus> allowed = allowedTransitions.get(oldStatus);
 
         if (allowed == null || !allowed.contains(newStatus)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Invalid status transition: " + currentStatus + " → " + newStatus
+                    "Invalid status transition: " + oldStatus + " → " + newStatus
             );
         }
-
-        // store old status
-        OrderStatus oldStatus = order.getStatus();
 
         order.setStatus(newStatus);
         Order savedOrder = orderRepository.save(order);
 
-        // 🔥 CREATE NOTIFICATION AFTER SUCCESSFUL UPDATE
+        // 🔥 INVENTORY UPDATE
+        handleInventoryUpdate(oldStatus, newStatus, savedOrder);
+
+        // 🔔 NOTIFICATION
         if (!oldStatus.equals(newStatus)) {
 
             Notification notification =
@@ -155,10 +156,52 @@ public class OrderService {
         return savedOrder;
     }
 
+    // ================= INVENTORY LOGIC =================
+    private void handleInventoryUpdate(OrderStatus oldStatus,
+                                       OrderStatus newStatus,
+                                       Order order) {
+
+        System.out.println("🔥 Inventory Update: " + oldStatus + " → " + newStatus);
+
+        for (OrderItem item : order.getOrderItems()) {
+
+            Integer productId = item.getProduct().getId();
+            Integer qty = item.getQuantity();
+
+            // 🔺 CANCELLED → RESTORE STOCK
+            if (newStatus == OrderStatus.CANCELLED &&
+                    oldStatus != OrderStatus.CANCELLED) {
+
+                inventoryLogService.createLog(
+                        productId,
+                        qty,
+                        "CANCELLED",
+                        order.getId(),
+                        "Stock restored due to cancellation"
+                );
+            }
+
+            // 🔺 RETURNED → RESTORE STOCK
+            else if (newStatus == OrderStatus.RETURNED &&
+                    oldStatus != OrderStatus.RETURNED) {
+
+                inventoryLogService.createLog(
+                        productId,
+                        qty,
+                        "RETURNED",
+                        order.getId(),
+                        "Stock restored after return"
+                );
+            }
+        }
+    }
+
     // ================= SELLER ORDERS =================
     public List<Order> getSellerOrders(Integer userId) {
         return orderRepository.findByHandledById(userId);
     }
+
+    // ================= SEARCH =================
     public List<Order> searchOrders(String query) {
         return orderRepository
                 .findByOrderNumberContainingIgnoreCaseOrUser_NameContainingIgnoreCase(
@@ -167,35 +210,38 @@ public class OrderService {
                 );
     }
 
-    // 📊 STATUS METHOD
+    // ================= STATUS FILTER =================
     public List<Order> getOrdersByStatus(OrderStatus status) {
         return orderRepository.findByStatus(status);
     }
 
-    // 📅 DATE FILTER METHOD
+    // ================= DATE FILTER =================
     public List<Order> filterByDate(String type) {
 
         LocalDateTime now = LocalDateTime.now();
 
         if (type.equalsIgnoreCase("TODAY")) {
+            return orderRepository.findByCreatedAtGreaterThanEqual(
+                    now.toLocalDate().atStartOfDay()
+            );
+        }
 
-            LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
-            return orderRepository.findByCreatedAtGreaterThanEqual(startOfDay);
+        if (type.equalsIgnoreCase("WEEK")) {
+            return orderRepository.findByCreatedAtGreaterThanEqual(
+                    now.minusDays(7)
+            );
+        }
 
-        } else if (type.equalsIgnoreCase("WEEK")) {
-
-            LocalDateTime startOfWeek = now.minusDays(7);
-            return orderRepository.findByCreatedAtGreaterThanEqual(startOfWeek);
-
-        } else if (type.equalsIgnoreCase("MONTH")) {
-
-            LocalDateTime startOfMonth = now.minusMonths(1);
-            return orderRepository.findByCreatedAtGreaterThanEqual(startOfMonth);
-
+        if (type.equalsIgnoreCase("MONTH")) {
+            return orderRepository.findByCreatedAtGreaterThanEqual(
+                    now.minusMonths(1)
+            );
         }
 
         return List.of();
     }
+
+    // ================= PAYMENT STATUS =================
     public Order updatePaymentStatus(Integer id, String status) {
 
         Order order = orderRepository.findById(id)

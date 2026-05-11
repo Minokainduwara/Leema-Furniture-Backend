@@ -4,7 +4,9 @@ import com.example.demo.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,4 +27,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     // 📅 DATE FILTER
     List<Order> findByCreatedAtGreaterThanEqual(LocalDateTime date);
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o")
+    BigDecimal getTotalSales();
+
+    long count();
 }

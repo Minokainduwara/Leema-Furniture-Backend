@@ -1,6 +1,7 @@
 package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
+import com.example.demo.enums.DiscountType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -95,10 +96,10 @@ public class Coupon {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public enum DiscountType {
-        percentage,
-        fixed_amount
-    }
+//    public enum DiscountType {
+//        percentage,
+//        fixed_amount
+//    }
 
     public enum ApplicableTo {
         all_products,

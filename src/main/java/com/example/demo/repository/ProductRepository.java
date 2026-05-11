@@ -13,6 +13,8 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> findByFeaturedTrue();
 
     List<Product> findByCategory(Category category);
-    List<Product> findByStatus(String status);
+    List<Product> findByStatus(Product.ProductStatus status);
     Optional<Product> findBySku(String sku);
+    long countByCategory_Id(Integer categoryId);
+    long count();
 }

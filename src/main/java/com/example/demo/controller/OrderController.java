@@ -16,6 +16,7 @@ public class OrderController {
     private OrderService orderService;
 
 
+
     @GetMapping("/all")
     public List<Order> getAllOrders() {
         return orderService.getAllOrders();
@@ -47,10 +48,10 @@ public class OrderController {
     }
 
     // GET /api/orders/{id}/invoice
-    @GetMapping("/{id}/invoice")
-    public String getInvoice(@PathVariable Integer id) {
-        return orderService.generateInvoice(id);
-    }
+//    @GetMapping("/{id}/invoice")
+//    public String getInvoice(@PathVariable Integer id) {
+//        return orderService.generateInvoice(id);
+//    }
     @PatchMapping("/{id}/status")
     public Order updateStatus(@PathVariable Integer id,
                               @RequestBody Map<String, String> body) {
