@@ -28,7 +28,7 @@ public class AdminUserService {
         if (role == null || role.isBlank()) return null;
 
         try {
-            return User.Role.valueOf(role.trim().toUpperCase());
+            return User.Role.valueOf(role.trim().toLowerCase());
         } catch (Exception e) {
             throw new RuntimeException("Invalid role: " + role);
         }
@@ -38,7 +38,7 @@ public class AdminUserService {
         if (status == null || status.isBlank()) return null;
 
         try {
-            return User.Status.valueOf(status.trim().toUpperCase());
+            return User.Status.valueOf(status.trim().toLowerCase());
         } catch (Exception e) {
             throw new RuntimeException("Invalid status: " + status);
         }
