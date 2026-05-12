@@ -1,8 +1,10 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.response.OrderResponse;
 import com.example.demo.entity.Order;
 import com.example.demo.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -84,5 +86,9 @@ public class OrderController {
             @RequestBody Map<String, String> body
     ) {
         return orderService.updatePaymentStatus(id, body.get("paymentStatus"));
+    }
+    @GetMapping("/recent")
+    public List<OrderResponse> getRecentOrders(Authentication auth) {
+        return orderService.getRecentOrders(auth.getName());
     }
 }

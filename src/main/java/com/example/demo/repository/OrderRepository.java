@@ -31,4 +31,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     BigDecimal getTotalSales();
 
     long count();
+    int countByUser_Email(String email);
+    int countByUser_EmailAndStatus(String email, Order.OrderStatus status);
+    List<Order> findTop5ByUser_EmailOrderByCreatedAtDesc(String email);
 }

@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.response.OrderResponse;
 import com.example.demo.entity.Notification;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.OrderItem;
@@ -250,5 +251,19 @@ public class OrderService {
         order.setPaymentStatus(Order.PaymentStatus.valueOf(status.toUpperCase()));
 
         return orderRepository.save(order);
+    }
+    public List<OrderResponse> getRecentOrders(String email) {
+
+        List<Order> orders =
+                orderRepository.findTop5ByUser_EmailOrderByCreatedAtDesc(email);
+
+        return orders.stream()
+                .map(order -> new OrderResponse(
+                        order.getId(),
+                        order.getOrderNumber(),
+                        order.getStatus().name(),
+                        order.getTotalAmount()
+                ))
+                .toList();
     }
 }
