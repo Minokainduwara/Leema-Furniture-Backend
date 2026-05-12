@@ -11,6 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
 
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:C:/leemaProject/leema/LeemaBackend/Leema-Furniture-Backend/uploads/");
+                .addResourceLocations("file:uploads/");
     }
+
 }
