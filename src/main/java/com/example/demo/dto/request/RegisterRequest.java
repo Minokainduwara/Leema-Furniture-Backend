@@ -13,8 +13,8 @@ public class RegisterRequest {
 
     @NotBlank
     @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{6,128}$",
-        message = "Password must contain upper, lower, number, special character and be at least 6 characters"
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{6,128}$",
+            message = "Password must contain upper, lower, number, special character and be at least 6 characters"
     )
     private String password;
 

@@ -1,4 +1,5 @@
 package com.example.demo.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,13 +27,13 @@ public class OrderItem {
     // Many order items belong to one order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    @JsonManagedReference
+    @JsonIgnore
     private Order order;
 
     // Purchased product reference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    @JsonManagedReference
+    @JsonIgnore
     private Product product;
 
     @Column(nullable = false)
@@ -65,5 +66,8 @@ public class OrderItem {
         if (quantity == null || quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than 0");
         }
+    }
+    public String getProductName() {
+        return product != null ? product.getName() : null;
     }
 }

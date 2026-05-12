@@ -37,8 +37,8 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .name(req.getName())
                 .phoneNumber(req.getPhoneNumber())
-                .role(User.Role.user)
-                .status(User.Status.active)
+                .role(User.Role.CUSTOMER)
+                .status(User.Status.ACTIVE)
                 .build();
 
         userRepository.save(user);

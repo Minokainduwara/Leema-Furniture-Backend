@@ -18,7 +18,7 @@ public class RefreshTokenService {
     private final long refreshTokenDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
 
     public RefreshToken createRefreshToken(User user) {
-        
+
         RefreshToken token = RefreshToken.builder()
                 .token(UUID.randomUUID().toString())
                 .user(user)
@@ -47,7 +47,7 @@ public class RefreshTokenService {
             refreshTokenRepository.save(refreshToken);
             throw new RuntimeException("Refresh token expired");
         }
-                return refreshToken;
+        return refreshToken;
     }
 
     public void revokeToken(RefreshToken token) {

@@ -1,6 +1,7 @@
 package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
+import com.example.demo.enums.DiscountType;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -121,6 +122,14 @@ public class Coupon {
     @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CouponCategory> couponCategories = new ArrayList<>();
 
-    public Coupon() {
+//    public enum DiscountType {
+//        percentage,
+//        fixed_amount
+//    }
+
+    public enum ApplicableTo {
+        all_products,
+        specific_products,
+        specific_categories
     }
 }

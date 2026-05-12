@@ -4,13 +4,12 @@ import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.dto.response.ProductUpdateRequest;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.Product.ProductStatus;
-import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.MediaType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -24,24 +23,27 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
-    @Autowired
-    private ProductRepository productRepository;
 
-    // GET /api/products
+    // =====================================
+    // GET ALL PRODUCTS
+    // =====================================
     @GetMapping
     public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll()
-                .stream()
-                .map(ProductResponse::new)
-                .toList();
+        return productService.getAllProducts();
     }
 
-    // GET /api/products/{id}
+    // =====================================
+    // GET PRODUCT BY ID
+    // =====================================
     @GetMapping("/{id}")
-    public Product getProductById(@PathVariable Integer id) {
+    public ProductResponse getProductById(@PathVariable Integer id) {
         return productService.getProductById(id);
     }
 
+    // =====================================
+    // CREATE PRODUCT (NO DISCOUNT LOGIC HERE)
+    // Discount handled separately via ProductDiscountController
+    // =====================================
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProduct(
             @RequestParam String name,
@@ -53,18 +55,29 @@ public class ProductController {
             @RequestParam String longDescription,
             @RequestParam String status,
             @RequestParam Integer categoryId,
-            @RequestParam MultipartFile image
+            @RequestParam(required = false) MultipartFile image
     ) {
-        productService.createProduct(
-                name, sku, price, cost, stock,
-                description, longDescription,
-                status, categoryId, image
+
+        Product product = productService.createProduct(
+                name,
+                sku,
+                price,
+                cost,// discountType removed (handled separately) // discountValue removed
+                stock,
+                description,
+                longDescription,
+                status,
+                categoryId,
+                image
         );
 
-        return ResponseEntity.ok("Product created successfully");
+        return ResponseEntity.ok(product.getId());
     }
 
-    // UPDATE product
+    // =====================================
+    // UPDATE PRODUCT
+    // (Discount is NOT updated here - use ProductDiscountController)
+    // =====================================
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Product updateProduct(
             @PathVariable Integer id,
@@ -94,31 +107,49 @@ public class ProductController {
 
         return productService.updateProduct(id, data, image);
     }
-    // DELETE product
+
+    // =====================================
+    // DELETE PRODUCT (also deletes discount in service)
+    // =====================================
     @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteProduct(@PathVariable Integer id) {
         productService.deleteProduct(id);
+        return ResponseEntity.ok("Product deleted successfully");
     }
-    // GET /api/products/search?keyword=sofa
+
+    // =====================================
+    // SEARCH PRODUCTS
+    // =====================================
     @GetMapping("/search")
-    public List<Product> searchProducts(@RequestParam String keyword) {
+    public List<ProductResponse> searchProducts(@RequestParam String keyword) {
         return productService.searchProducts(keyword);
     }
 
-    // GET /api/products/featured
+    // =====================================
+    // FEATURED PRODUCTS
+    // =====================================
     @GetMapping("/featured")
-    public List<Product> getFeaturedProducts() {
+    public List<ProductResponse> getFeaturedProducts() {
         return productService.getFeaturedProducts();
     }
 
-    // GET /api/products/{id}/related
+    // =====================================
+    // RELATED PRODUCTS
+    // =====================================
     @GetMapping("/{id}/related")
-    public List<Product> getRelatedProducts(@PathVariable Integer id) {
+    public List<ProductResponse> getRelatedProducts(@PathVariable Integer id) {
         return productService.getRelatedProducts(id);
     }
+
+    // =====================================
+    // UPDATE PRODUCT STATUS
+    // =====================================
     @PatchMapping("/{id}/status")
-    public Product updateStatus(@PathVariable Integer id,
-                                @RequestBody Map<String, String> body) {
-        return productService.updateStatus(id, body.get("status"));
+    public ProductResponse updateStatus(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> body
+    ) {
+        Product updated = productService.updateStatus(id, body.get("status"));
+        return productService.mapToResponse(updated);
     }
 }

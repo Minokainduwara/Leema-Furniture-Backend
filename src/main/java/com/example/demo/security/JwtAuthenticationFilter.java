@@ -24,19 +24,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
-    
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        
-        if (request.getRequestURI().startsWith("/api/auth")) {
+
+        String path = request.getServletPath();
+
+// skip auth endpoints
+        if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
         }
-        
+
         final String authHeader = request.getHeader("Authorization");
         String token = null;
-        
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         }
@@ -45,20 +48,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 Jws<Claims> claims = jwtService.parseToken(token);
                 String username = claims.getBody().getSubject();
-                
+
                 if (username != null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             } catch (ExpiredJwtException ex) {
                 // token expired
             } catch (JwtException ex) {
-                // invalid token
+                System.out.println("JWT INVALID: " + ex.getMessage());
             }
         }
 
