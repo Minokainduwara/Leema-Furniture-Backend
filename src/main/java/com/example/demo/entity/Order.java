@@ -1,5 +1,8 @@
 package com.example.demo.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,6 +33,7 @@ public class Order {
     // Order belongs to one user
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @Column(name = "order_number", nullable = false, unique = true, length = 50)
@@ -38,21 +42,25 @@ public class Order {
     // Shipping address snapshot reference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shipping_address_id")
+    @JsonIgnore
     private ShippingAddress shippingAddress;
 
     // Billing address snapshot reference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "billing_address_id")
+    @JsonIgnore
     private BillingAddress billingAddress;
 
     // Shipping method
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shipping_method_id")
+    @JsonIgnore
     private ShippingMethod shippingMethod;
 
     // Applied coupon
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id")
+    @JsonIgnore
     private Coupon coupon;
 
     @Column(nullable = false, precision = 10, scale = 2)
@@ -88,6 +96,7 @@ public class Order {
     @OneToMany(mappedBy = "order",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
+    @JsonProperty("items")
     @JsonManagedReference
     private List<OrderItem> orderItems;
 
@@ -113,12 +122,33 @@ public class Order {
     }
     @ManyToOne
     @JoinColumn(name = "handled_by")
+    @JsonIgnore
     private User handledBy;
 
     private String generateOrderNumber() {
         return "ORD-" + System.currentTimeMillis();
     }
+    @JsonProperty("customerName")
+    public String getCustomerName() {
+        return user != null ? user.getName() : null;
+    }
+    @JsonProperty("phone")
+    public String getPhone() {
+        return user != null ? user.getPhoneNumber() : null;
+    }
 
+    @JsonProperty("address")
+    public String getAddress() {
+        if (billingAddress == null) return null;
+
+        return billingAddress.getStreetAddress() + ", " +
+                billingAddress.getCity() + ", " +
+                billingAddress.getCountry();
+    }
+    @JsonProperty("orderDate")
+    public LocalDateTime getOrderDate() {
+        return createdAt;
+    }
     // ================= ENUMS =================
 
     public enum OrderStatus {

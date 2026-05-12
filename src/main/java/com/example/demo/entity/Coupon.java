@@ -1,79 +1,26 @@
 package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import com.example.demo.enums.DiscountType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
 @Entity
-@Table(name = "coupons")
+@Table(name = "coupons",
+        indexes = {
+                @Index(name = "idx_code", columnList = "code"),
+                @Index(name = "idx_is_active", columnList = "is_active"),
+                @Index(name = "idx_valid_until", columnList = "valid_until")
+        }
+)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Coupon {
-
-    public enum DiscountType {
-        PERCENTAGE,
-        FIXED_AMOUNT
-    }
-
-    public enum ApplicableTo {
-        ALL_PRODUCTS,
-        SPECIFIC_PRODUCTS,
-        SPECIFIC_CATEGORIES
-    }
-
-    @Converter(autoApply = false)
-    public static class DiscountTypeConverter implements AttributeConverter<DiscountType, String> {
-        @Override
-        public String convertToDatabaseColumn(DiscountType attribute) {
-            if (attribute == null) return null;
-            return switch (attribute) {
-                case PERCENTAGE -> "percentage";
-                case FIXED_AMOUNT -> "fixed_amount";
-            };
-        }
-
-        @Override
-        public DiscountType convertToEntityAttribute(String dbData) {
-            if (dbData == null) return null;
-            return switch (dbData.toLowerCase()) {
-                case "percentage" -> DiscountType.PERCENTAGE;
-                case "fixed_amount" -> DiscountType.FIXED_AMOUNT;
-                default -> throw new IllegalArgumentException("Unknown discount_type value: " + dbData);
-            };
-        }
-    }
-
-    @Converter(autoApply = false)
-    public static class ApplicableToConverter implements AttributeConverter<ApplicableTo, String> {
-        @Override
-        public String convertToDatabaseColumn(ApplicableTo attribute) {
-            if (attribute == null) return null;
-            return switch (attribute) {
-                case ALL_PRODUCTS -> "all_products";
-                case SPECIFIC_PRODUCTS -> "specific_products";
-                case SPECIFIC_CATEGORIES -> "specific_categories";
-            };
-        }
-
-        @Override
-        public ApplicableTo convertToEntityAttribute(String dbData) {
-            if (dbData == null) return null;
-            return switch (dbData.toLowerCase()) {
-                case "all_products" -> ApplicableTo.ALL_PRODUCTS;
-                case "specific_products" -> ApplicableTo.SPECIFIC_PRODUCTS;
-                case "specific_categories" -> ApplicableTo.SPECIFIC_CATEGORIES;
-                default -> throw new IllegalArgumentException("Unknown applicable_to value: " + dbData);
-            };
-        }
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -85,42 +32,78 @@ public class Coupon {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Convert(converter = DiscountTypeConverter.class)
+    @Enumerated(EnumType.STRING)
     @Column(name = "discount_type", nullable = false)
     private DiscountType discountType;
 
-    @Column(name = "discount_value", nullable = false)
+    @Column(name = "discount_value", nullable = false, precision = 10, scale = 2)
     private BigDecimal discountValue;
 
+    @Column(name = "max_uses")
     private Integer maxUses;
 
-    @Column(name = "current_uses", nullable = false)
+    @Column(name = "current_uses")
     private Integer currentUses = 0;
 
+    @Column(name = "min_order_amount", precision = 10, scale = 2)
     private BigDecimal minOrderAmount;
+
+    @Column(name = "max_order_amount", precision = 10, scale = 2)
     private BigDecimal maxOrderAmount;
 
-    @Convert(converter = ApplicableToConverter.class)
-    private ApplicableTo applicableTo = ApplicableTo.ALL_PRODUCTS;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "applicable_to")
+    private ApplicableTo applicableTo = ApplicableTo.all_products;
 
+    @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;
+
+    @Column(name = "valid_until", nullable = false)
     private LocalDate validUntil;
 
+    @Column(name = "is_active")
     private Boolean isActive = true;
 
-    @ManyToOne
+    // User who created the coupon
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
 
+    @OneToMany(mappedBy = "coupon",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<CouponProduct> couponProducts;
+
+    @OneToMany(mappedBy = "coupon",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<CouponCategory> couponCategories;
+
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CouponProduct> couponProducts = new ArrayList<>();
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 
-    @OneToMany(mappedBy = "coupon", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CouponCategory> couponCategories = new ArrayList<>();
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 
-    public Coupon() {
+//    public enum DiscountType {
+//        percentage,
+//        fixed_amount
+//    }
+
+    public enum ApplicableTo {
+        all_products,
+        specific_products,
+        specific_categories
     }
 }

@@ -1,9 +1,15 @@
 package com.example.demo.dto.response;
 
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record WishlistResponse(
-        Integer wishlistId,
-        List<WishlistItemResponse> items
-) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class WishlistResponse {
+
+    private Integer id;
+
+    private String userEmail;
 }
