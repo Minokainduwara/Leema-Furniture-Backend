@@ -6,163 +6,294 @@ import com.example.demo.entity.BillingAddress;
 import com.example.demo.entity.ShippingAddress;
 import com.example.demo.repository.BillingAddressRepository;
 import com.example.demo.repository.ShippingAddressRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class AddressService {
 
-    private final ShippingAddressRepository shippingRepo;
-    private final BillingAddressRepository billingRepo;
+    private final ShippingAddressRepository shippingAddressRepository;
 
-    public AddressService(ShippingAddressRepository shippingRepo,
-                          BillingAddressRepository billingRepo) {
-        this.shippingRepo = shippingRepo;
-        this.billingRepo = billingRepo;
-    }
+    private final BillingAddressRepository billingAddressRepository;
 
-    // SHIPPING 
+    // =========================================================
+    // SHIPPING
+    // =========================================================
 
-    public List<AddressResponse> getShippingAddresses(Integer userId) {
-        return shippingRepo.findByUserId(userId.intValue())
+    public List<AddressResponse> getShippingAddresses(
+            Integer userId
+    ) {
+
+        return shippingAddressRepository
+                .findByUserId(userId)
                 .stream()
-                .map(this::mapShippingToResponse)
+                .map(this::mapShippingResponse)
                 .toList();
     }
 
-    @Transactional
-    public AddressResponse createShippingAddress(Integer userId, AddressRequest req) {
+    public AddressResponse getDefaultShippingAddress(
+            Integer userId
+    ) {
 
-        ShippingAddress address = new ShippingAddress();
+        ShippingAddress address =
+                shippingAddressRepository
+                        .findByUserIdAndIsDefaultTrue(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Default shipping address not found"
+                                ));
 
-        address.setUserId(userId.intValue());
-        address.setFullName(req.fullName());
-        address.setPhoneNumber(req.phoneNumber());
-        address.setEmail(req.email());
-        address.setStreetAddress(req.streetAddress());
-        address.setApartmentSuite(req.apartmentSuite());
-        address.setCity(req.city());
-        address.setStateProvince(req.stateProvince());
-        address.setPostalCode(req.postalCode());
-        address.setCountry(req.country());
-        address.setIsDefault(req.isDefault() != null && req.isDefault());
-        address.setCreatedAt(LocalDateTime.now());
-        address.setUpdatedAt(LocalDateTime.now());
-
-        return mapShippingToResponse(shippingRepo.save(address));
+        return mapShippingResponse(address);
     }
 
-    @Transactional
-    public AddressResponse updateShippingAddress(Integer userId, Integer id, AddressRequest req) {
+    public AddressResponse createShippingAddress(
+            Integer userId,
+            AddressRequest request
+    ) {
 
-        ShippingAddress address = shippingRepo.findById(id.intValue())
-                .orElseThrow(() -> new RuntimeException("Shipping address not found"));
+        ShippingAddress address =
+                ShippingAddress.builder()
+                        .userId(userId)
+                        .fullName(request.fullName())
+                        .phoneNumber(request.phoneNumber())
+                        .email(request.email())
+                        .streetAddress(request.streetAddress())
+                        .apartmentSuite(request.apartmentSuite())
+                        .city(request.city())
+                        .stateProvince(request.stateProvince())
+                        .postalCode(request.postalCode())
+                        .country(request.country())
+                        .isDefault(
+                                request.isDefault() != null
+                                        ? request.isDefault()
+                                        : false
+                        )
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
 
-        address.setFullName(req.fullName());
-        address.setPhoneNumber(req.phoneNumber());
-        address.setEmail(req.email());
-        address.setStreetAddress(req.streetAddress());
-        address.setApartmentSuite(req.apartmentSuite());
-        address.setCity(req.city());
-        address.setStateProvince(req.stateProvince());
-        address.setPostalCode(req.postalCode());
-        address.setCountry(req.country());
-        address.setUpdatedAt(LocalDateTime.now());
+        ShippingAddress saved =
+                shippingAddressRepository.save(address);
 
-        return mapShippingToResponse(shippingRepo.save(address));
+        return mapShippingResponse(saved);
     }
 
-    @Transactional
-    public void deleteShippingAddress(Integer userId, Integer id) {
-        shippingRepo.deleteByUserIdAndId(userId.intValue(), id.intValue());
-    }
+    public AddressResponse updateShippingAddress(
+            Integer userId,
+            Integer id,
+            AddressRequest request
+    ) {
 
-    @Transactional
-    public void setDefaultShippingAddress(Integer userId, Integer id) {
+        ShippingAddress address =
+                shippingAddressRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Shipping address not found"
+                                ));
 
-        List<ShippingAddress> list = shippingRepo.findByUserId(userId.intValue());
+        address.setFullName(request.fullName());
+        address.setPhoneNumber(request.phoneNumber());
+        address.setEmail(request.email());
+        address.setStreetAddress(request.streetAddress());
+        address.setApartmentSuite(request.apartmentSuite());
+        address.setCity(request.city());
+        address.setStateProvince(request.stateProvince());
+        address.setPostalCode(request.postalCode());
+        address.setCountry(request.country());
 
-        for (ShippingAddress addr : list) {
-            addr.setIsDefault(addr.getId().equals(id.intValue()));
+        if (request.isDefault() != null) {
+            address.setIsDefault(request.isDefault());
         }
 
-        shippingRepo.saveAll(list);
+        address.setUpdatedAt(LocalDateTime.now());
+
+        ShippingAddress updated =
+                shippingAddressRepository.save(address);
+
+        return mapShippingResponse(updated);
     }
 
-    // BILLING 
+    public void setDefaultShippingAddress(
+            Integer userId,
+            Integer id
+    ) {
 
-    public List<AddressResponse> getBillingAddresses(Integer userId) {
-        return billingRepo.findByUserId(userId.intValue())
+        List<ShippingAddress> addresses =
+                shippingAddressRepository.findByUserId(userId);
+
+        for (ShippingAddress address : addresses) {
+
+            address.setIsDefault(false);
+        }
+
+        ShippingAddress selected =
+                shippingAddressRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Shipping address not found"
+                                ));
+
+        selected.setIsDefault(true);
+
+        shippingAddressRepository.saveAll(addresses);
+
+        shippingAddressRepository.save(selected);
+    }
+
+    public void deleteShippingAddress(
+            Integer userId,
+            Integer id
+    ) {
+
+        shippingAddressRepository
+                .deleteByUserIdAndId(userId, id);
+    }
+
+    // =========================================================
+    // BILLING
+    // =========================================================
+
+    public List<AddressResponse> getBillingAddresses(
+            Integer userId
+    ) {
+
+        return billingAddressRepository
+                .findByUserId(userId)
                 .stream()
-                .map(this::mapBillingToResponse)
+                .map(this::mapBillingResponse)
                 .toList();
     }
 
-    @Transactional
-    public AddressResponse createBillingAddress(Integer userId, AddressRequest req) {
+    public AddressResponse getDefaultBillingAddress(
+            Integer userId
+    ) {
 
-        BillingAddress address = new BillingAddress();
+        BillingAddress address =
+                billingAddressRepository
+                        .findByUserIdAndIsDefaultTrue(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Default billing address not found"
+                                ));
 
-        address.setUserId(userId.intValue());
-        address.setFullName(req.fullName());
-        address.setPhoneNumber(req.phoneNumber());
-        address.setEmail(req.email());
-        address.setStreetAddress(req.streetAddress());
-        address.setApartmentSuite(req.apartmentSuite());
-        address.setCity(req.city());
-        address.setStateProvince(req.stateProvince());
-        address.setPostalCode(req.postalCode());
-        address.setCountry(req.country());
-        address.setIsDefault(req.isDefault() != null && req.isDefault());
-        address.setCreatedAt(LocalDateTime.now());
-        address.setUpdatedAt(LocalDateTime.now());
-
-        return mapBillingToResponse(billingRepo.save(address));
+        return mapBillingResponse(address);
     }
 
-    @Transactional
-    public AddressResponse updateBillingAddress(Integer userId, Integer id, AddressRequest req) {
+    public AddressResponse createBillingAddress(
+            Integer userId,
+            AddressRequest request
+    ) {
 
-        BillingAddress address = billingRepo.findById(id.intValue())
-                .orElseThrow(() -> new RuntimeException("Billing address not found"));
+        BillingAddress address =
+                BillingAddress.builder()
+                        .userId(userId)
+                        .fullName(request.fullName())
+                        .phoneNumber(request.phoneNumber())
+                        .email(request.email())
+                        .streetAddress(request.streetAddress())
+                        .apartmentSuite(request.apartmentSuite())
+                        .city(request.city())
+                        .stateProvince(request.stateProvince())
+                        .postalCode(request.postalCode())
+                        .country(request.country())
+                        .isDefault(
+                                request.isDefault() != null
+                                        ? request.isDefault()
+                                        : false
+                        )
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
 
-        address.setFullName(req.fullName());
-        address.setPhoneNumber(req.phoneNumber());
-        address.setEmail(req.email());
-        address.setStreetAddress(req.streetAddress());
-        address.setApartmentSuite(req.apartmentSuite());
-        address.setCity(req.city());
-        address.setStateProvince(req.stateProvince());
-        address.setPostalCode(req.postalCode());
-        address.setCountry(req.country());
-        address.setUpdatedAt(LocalDateTime.now());
+        BillingAddress saved =
+                billingAddressRepository.save(address);
 
-        return mapBillingToResponse(billingRepo.save(address));
+        return mapBillingResponse(saved);
     }
 
-    @Transactional
-    public void setDefaultBillingAddress(Integer userId, Integer id) {
+    public AddressResponse updateBillingAddress(
+            Integer userId,
+            Integer id,
+            AddressRequest request
+    ) {
 
-        List<BillingAddress> list = billingRepo.findByUserId(userId.intValue());
+        BillingAddress address =
+                billingAddressRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Billing address not found"
+                                ));
 
-        for (BillingAddress addr : list) {
-            addr.setIsDefault(addr.getId().equals(id.intValue()));
+        address.setFullName(request.fullName());
+        address.setPhoneNumber(request.phoneNumber());
+        address.setEmail(request.email());
+        address.setStreetAddress(request.streetAddress());
+        address.setApartmentSuite(request.apartmentSuite());
+        address.setCity(request.city());
+        address.setStateProvince(request.stateProvince());
+        address.setPostalCode(request.postalCode());
+        address.setCountry(request.country());
+
+        if (request.isDefault() != null) {
+            address.setIsDefault(request.isDefault());
         }
 
-        billingRepo.saveAll(list);
+        address.setUpdatedAt(LocalDateTime.now());
+
+        BillingAddress updated =
+                billingAddressRepository.save(address);
+
+        return mapBillingResponse(updated);
     }
 
-    @Transactional
-    public void deleteBillingAddress(Integer userId, Integer id) {
-        billingRepo.deleteByUserIdAndId(userId.intValue(), id.intValue());
+    public void setDefaultBillingAddress(
+            Integer userId,
+            Integer id
+    ) {
+
+        List<BillingAddress> addresses =
+                billingAddressRepository.findByUserId(userId);
+
+        for (BillingAddress address : addresses) {
+
+            address.setIsDefault(false);
+        }
+
+        BillingAddress selected =
+                billingAddressRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Billing address not found"
+                                ));
+
+        selected.setIsDefault(true);
+
+        billingAddressRepository.saveAll(addresses);
+
+        billingAddressRepository.save(selected);
     }
 
-    // MAPPERS 
+    public void deleteBillingAddress(
+            Integer userId,
+            Integer id
+    ) {
 
-    private AddressResponse mapShippingToResponse(ShippingAddress address) {
+        billingAddressRepository
+                .deleteByUserIdAndId(userId, id);
+    }
+
+    // =========================================================
+    // RESPONSE MAPPERS
+    // =========================================================
+
+    private AddressResponse mapShippingResponse(
+            ShippingAddress address
+    ) {
+
         return new AddressResponse(
                 address.getId(),
                 address.getUserId(),
@@ -181,7 +312,10 @@ public class AddressService {
         );
     }
 
-    private AddressResponse mapBillingToResponse(BillingAddress address) {
+    private AddressResponse mapBillingResponse(
+            BillingAddress address
+    ) {
+
         return new AddressResponse(
                 address.getId(),
                 address.getUserId(),

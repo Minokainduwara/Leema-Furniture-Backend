@@ -29,7 +29,6 @@ public record AddressRequest(
         @Size(max = 100, message = "city must be at most 100 characters")
         String city,
 
-        @NotBlank(message = "stateProvince is required")
         @Size(max = 100, message = "stateProvince must be at most 100 characters")
         String stateProvince,
 
@@ -43,4 +42,5 @@ public record AddressRequest(
 
         Boolean isDefault
 
-) {}
+) {
+}

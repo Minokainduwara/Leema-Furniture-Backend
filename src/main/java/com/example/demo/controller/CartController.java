@@ -1,9 +1,10 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.request.AddToCartRequest;
-import com.example.demo.dto.request.RemoveCartItemRequest;
-import com.example.demo.dto.request.UpdateCartRequest;
+import com.example.demo.dto.request.CartItemRequest;
+import com.example.demo.dto.response.CartItemResponse;
 import com.example.demo.dto.response.CartResponse;
+import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,26 +15,31 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class CartController {
 
     private final CartService cartService;
+    private final UserRepository userRepository;
 
     // =========================================================
     // ADD TO CART
     // =========================================================
 
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(
-            @Valid @RequestBody AddToCartRequest request,
+    public ResponseEntity<CartItemResponse> addToCart(
+            @Valid @RequestBody CartItemRequest request,
             Authentication authentication
     ) {
 
-        cartService.addToCart(
-                authentication.getName(),
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        CartItemResponse response = cartService.addItem(
+                user.getId(),
                 request
         );
 
-        return ResponseEntity.ok("Item added to cart");
+        return ResponseEntity.ok(response);
     }
 
     // =========================================================
@@ -45,8 +51,11 @@ public class CartController {
             Authentication authentication
     ) {
 
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         CartResponse response = cartService.getCart(
-                authentication.getName()
+                user.getId()
         );
 
         return ResponseEntity.ok(response);
@@ -56,35 +65,64 @@ public class CartController {
     // UPDATE CART ITEM
     // =========================================================
 
-    @PutMapping("/update")
-    public ResponseEntity<String> updateCartItem(
-            @Valid @RequestBody UpdateCartRequest request,
+    @PutMapping("/update/{itemId}")
+    public ResponseEntity<CartItemResponse> updateCartItem(
+            @PathVariable Integer itemId,
+            @Valid @RequestBody CartItemRequest request,
             Authentication authentication
     ) {
 
-        cartService.updateCartItem(
-                authentication.getName(),
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        CartItemResponse response = cartService.updateItem(
+                itemId,
                 request
         );
 
-        return ResponseEntity.ok("Cart updated");
+        return ResponseEntity.ok(response);
     }
 
     // =========================================================
     // REMOVE CART ITEM
     // =========================================================
 
-    @DeleteMapping("/item")
+    @DeleteMapping("/remove/{itemId}")
     public ResponseEntity<String> removeCartItem(
-            @Valid @RequestBody RemoveCartItemRequest request,
+            @PathVariable Integer itemId,
             Authentication authentication
     ) {
 
-        cartService.removeCartItem(
-                authentication.getName(),
-                request
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        cartService.removeItem(
+                itemId,
+                user.getId()
         );
 
         return ResponseEntity.ok("Item removed from cart");
     }
-}
+
+    // =========================================================
+    // CLEAR CART
+    // =========================================================
+
+    @DeleteMapping("/clear")
+    public ResponseEntity<String> clearCart(
+            Authentication authentication
+    ) {
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        cartService.clearCart(user.getId());
+
+        return ResponseEntity.ok("Cart cleared");
+    }
+
+    // =========================================================
+    // APPLY COUPON
+    // =========================================================
+
+    }
