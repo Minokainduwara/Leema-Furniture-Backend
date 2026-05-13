@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class CheckoutRequest {
 
-    // SHIPPING ADDRESS
+    // SHIPPING ADDRESSS
 
     private String fullName;
 
