@@ -150,8 +150,18 @@ public class EmailService {
 
         } catch (MessagingException ex) {
 
-            throw new RuntimeException(
-                    "Failed to send email"
+            // Don't crash checkout if SMTP isn't configured — just log.
+            System.err.println(
+                    "[EmailService] Failed to send order email: "
+                            + ex.getMessage()
+            );
+
+        } catch (Exception ex) {
+
+            // Catches MailSendException (bad host, bad creds, network) etc.
+            System.err.println(
+                    "[EmailService] Email send failed: "
+                            + ex.getMessage()
             );
         }
     }
