@@ -31,6 +31,9 @@ public class ProductResponse {
     // Pricing
     private BigDecimal price;
     private BigDecimal cost;           // admin/seller only — hidden from buyers
+    private BigDecimal finalPrice;     // price after discount (== price if no active discount)
+    private String discountType;       // PERCENTAGE | FIXED, or null
+    private BigDecimal discountValue;  // discount magnitude, or null
 
     // Inventory
     private Integer stock;
@@ -94,5 +97,9 @@ public class ProductResponse {
     }
 
     public ProductResponse(Product product, String type, BigDecimal value, BigDecimal finalPrice) {
+        this(product);
+        this.discountType = type;
+        this.discountValue = value;
+        this.finalPrice = finalPrice != null ? finalPrice : this.price;
     }
 }
