@@ -1,122 +1,98 @@
 package com.example.demo.dto.response;
-
 import com.example.demo.entity.Product;
-import java.math.BigDecimal;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductResponse {
 
     private Integer id;
     private String name;
-    private String sku;
+
+    // Category
+    private Integer categoryId;
+    private String categoryName;
+
+    // Seller (null for admin-created products)
+    private Integer sellerId;
+    private String sellerShopName;
+
+    // Pricing
     private BigDecimal price;
+    private BigDecimal cost;           // admin/seller only — hidden from buyers
+
+    // Inventory
     private Integer stock;
-    private String image;
-    private CategoryDTO category;
-    private BigDecimal cost;
+    private String sku;
+
+    // Content
     private String description;
     private String longDescription;
+    private String image;
+    private List<String> images;
 
-    private String discountType;
-    private BigDecimal discountValue;
-    private BigDecimal finalPrice;
+    // Status & flags
+    private String status;
 
-    public ProductResponse(Product product,
-                           String discountType,
-                           BigDecimal discountValue,
-                           BigDecimal finalPrice) {
+    // Stats
+    private BigDecimal rating;
+    private Integer totalSales;
+    private Integer reviewCount;
 
+    // Attributes
+    private List<ProductAttributeResponse> attributes;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    public ProductResponse(Product product) {
         this.id = product.getId();
         this.name = product.getName();
-        this.sku = product.getSku();
-        this.price = product.getPrice();
-        this.stock = product.getStock();
+
+        // Category (SAFE)
         if (product.getCategory() != null) {
-            this.category = new CategoryDTO(
-                    product.getCategory().getId(),
-                    product.getCategory().getName()
-            );
+            this.categoryId = product.getCategory().getId();
+            this.categoryName = product.getCategory().getName();
         }
+
+
+
+        // Pricing (SAFE)
+        this.price = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
         this.cost = product.getCost();
+
+        // Inventory (SAFE)
+        this.stock = product.getStock() != null ? product.getStock() : 0;
+        this.sku = product.getSku();
+
+        // Content
         this.description = product.getDescription();
         this.longDescription = product.getLongDescription();
         this.image = product.getImage();
 
-        this.discountType = discountType;
-        this.discountValue = discountValue;
-        this.finalPrice = finalPrice;
-    }
-    public BigDecimal getCost() {
-        return cost;
-    }
+        // Status (SAFE)
+        this.status = product.getStatus() != null ? product.getStatus().name() : null;
 
+        // Stats (SAFE — THIS IS COMMON CRASH POINT)
+        this.rating = product.getRating() != null ? product.getRating() : BigDecimal.ZERO;
+        this.totalSales = product.getTotalSales() != null ? product.getTotalSales() : 0;
 
-
-    public String getDescription() {
-        return description;
+        // Dates (SAFE)
+        this.createdAt = product.getCreatedAt();
+        this.updatedAt = product.getUpdatedAt();
     }
 
-
-
-    public String getLongDescription() {
-        return longDescription;
+    public ProductResponse(Product product, String type, BigDecimal value, BigDecimal finalPrice) {
     }
-
-
-    public CategoryDTO getCategory() {
-        return category;
-    }
-    public Integer getId() {
-        return id;
-    }
-
-
-    public String getName() {
-        return name;
-    }
-
-
-
-    public String getSku() {
-        return sku;
-    }
-
-
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-
-
-    public Integer getStock() {
-        return stock;
-    }
-
-
-
-    public String getImage() {
-        return image;
-    }
-
-
-
-
-
-    public String getDiscountType() {
-        return discountType;
-    }
-
-
-
-    public BigDecimal getDiscountValue() {
-        return discountValue;
-    }
-
-
-
-    public BigDecimal getFinalPrice() {
-        return finalPrice;
-    }
-
-
 }

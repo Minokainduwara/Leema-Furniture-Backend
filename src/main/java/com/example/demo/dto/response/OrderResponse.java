@@ -1,12 +1,13 @@
 package com.example.demo.dto.response;
 
 
+import jdk.jshell.Snippet;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-
 @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -16,5 +17,6 @@ import java.math.BigDecimal;
         private String orderNumber;
         private String status;
         private BigDecimal totalAmount;
+
 
 }

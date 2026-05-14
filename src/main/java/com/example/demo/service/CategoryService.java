@@ -109,4 +109,8 @@ public class CategoryService {
             return res;
         }).toList();
     }
+
+    public Category createCategory(Category category) {
+        return categoryRepository.save(category);
+    }
 }
