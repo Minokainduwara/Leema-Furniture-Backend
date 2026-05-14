@@ -32,6 +32,12 @@ public class CheckoutService {
 
     private final BillingAddressRepository billingAddressRepository;
 
+    private final ProductRepository productRepository;
+
+    private final InvoiceRepository invoiceRepository;
+
+    private final EmailService emailService;
+
     // =====================================================
     // CHECKOUT
     // =====================================================
@@ -110,6 +116,14 @@ public class CheckoutService {
 
         for (CartItem item : cartItemRepository.findByCart(cart)) {
 
+                if (item.getQuantity() > item.getProduct().getStock()) {
+
+                throw new RuntimeException(
+                        "Insufficient stock for product: "
+                        + item.getProduct().getName()
+                );
+                }
+
             BigDecimal itemTotal =
                     item.getAddedPrice()
                             .multiply(BigDecimal.valueOf(item.getQuantity()));
@@ -125,6 +139,14 @@ public class CheckoutService {
         // CREATE ORDER
         // =================================================
 
+        Order.OrderStatus orderStatus =
+                request.getPaymentMethod().equals("COD")
+                        ? Order.OrderStatus.confirmed
+                        : Order.OrderStatus.pending;
+
+        Order.PaymentStatus paymentStatus =
+                Order.PaymentStatus.pending;
+
         Order order = Order.builder()
                 .user(user)
                 .shippingAddress(shippingAddress)
@@ -133,8 +155,9 @@ public class CheckoutService {
                 .shippingCost(shippingCost)
                 .totalAmount(totalAmount)
                 .customerNotes(request.getCustomerNotes())
-                .status(Order.OrderStatus.pending)
-                .paymentStatus(Order.PaymentStatus.pending)
+                .paymentMethod(Order.PaymentMethod.valueOf(request.getPaymentMethod()))
+                .status(orderStatus)
+                .paymentStatus(paymentStatus)
                 .build();
 
         orderRepository.save(order);
@@ -158,7 +181,22 @@ public class CheckoutService {
                     .total(itemSubtotal)
                     .build();
 
-            orderItemRepository.save(orderItem);
+            orderItemRepository.save(orderItem);            
+        }
+
+        // =================================================
+        // REDUCE STOCK
+        // =================================================
+
+        for (CartItem item : cartItemRepository.findByCart(cart)) {
+
+        Product product = item.getProduct();
+
+        product.setStock(
+                product.getStock() - item.getQuantity()
+        );
+
+        productRepository.save(product);
         }
 
         // =================================================
@@ -174,6 +212,29 @@ public class CheckoutService {
                 .build();
 
         paymentRepository.save(payment);
+
+        
+        // =================================================
+        // CREATE INVOICE
+        // =================================================
+
+        Invoice invoice = Invoice.builder()
+                .order(order)
+                .payment(payment)
+                .subtotal(subtotal)
+                .shippingCost(shippingCost)
+                .totalAmount(totalAmount)
+                .build();
+
+        invoiceRepository.save(invoice);
+
+        // =================================================
+        // SEND ORDER CONFIRMATION EMAIL
+        // =================================================
+
+        emailService.sendOrderConfirmationEmail(
+                order
+        );
 
         // =================================================
         // CLEAR CART
