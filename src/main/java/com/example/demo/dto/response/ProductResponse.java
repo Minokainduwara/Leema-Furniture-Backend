@@ -20,6 +20,9 @@ public class ProductResponse {
     private BigDecimal discountValue;
     private BigDecimal finalPrice;
 
+    public ProductResponse(Product product) {
+        this(product, null, null, null);
+    }
     public ProductResponse(Product product,
                            String discountType,
                            BigDecimal discountValue,

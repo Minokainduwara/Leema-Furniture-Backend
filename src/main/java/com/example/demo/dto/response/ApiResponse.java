@@ -38,4 +38,11 @@ public class ApiResponse<T> {
     public void setData(T data) {
         this.data = data;
     }
+
+    public static ApiResponse success(Object data) {
+        ApiResponse response = new ApiResponse();
+        response.setSuccess(true);
+        response.setData(data);
+        return response;
+    }
 }

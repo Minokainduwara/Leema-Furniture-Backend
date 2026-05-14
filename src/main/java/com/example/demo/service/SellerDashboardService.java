@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.response.SellerDashboardResponse;
+import com.example.demo.entity.Product;
 import com.example.demo.repository.CategoryRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.ProductRepository;
@@ -21,7 +22,8 @@ public class SellerDashboardService {
 
         BigDecimal totalSales = orderRepository.getTotalSales();
         long orders = orderRepository.count();
-        long products = productRepository.count();
+        long products =productRepository.countByDeletedAtIsNullAndStatus(Product.ProductStatus.ACTIVE);
+        System.out.println("DASHBOARD PRODUCT COUNT = " + products);
         long categories = categoryRepository.count();
 
         return new SellerDashboardResponse(
