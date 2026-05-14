@@ -70,8 +70,8 @@ public class User {
 
     public enum Role {
         ADMIN,
-        SELLER,
-        CUSTOMER
+        CUSTOMER,
+        SELLER
     }
 
     public enum Status {
