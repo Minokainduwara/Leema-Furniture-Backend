@@ -3,6 +3,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -54,6 +55,9 @@ public class OrderItem {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+
+
 
     @PrePersist
     protected void onCreate() {

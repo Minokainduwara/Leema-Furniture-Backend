@@ -57,11 +57,7 @@ public class Order {
     @JsonIgnore
     private ShippingMethod shippingMethod;
 
-    // Applied coupon
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coupon_id")
-    @JsonIgnore
-    private Coupon coupon;
+
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;

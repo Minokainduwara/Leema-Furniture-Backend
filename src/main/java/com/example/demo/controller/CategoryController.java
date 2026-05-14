@@ -25,6 +25,11 @@ public class CategoryController {
         return categoryService.getAllCategoryResponses();
     }
 
+    // POST /api/categories
+    @PostMapping("/add")
+    public Category addCategory(@RequestBody Category category) {
+        return categoryService.addCategory(category);
+    }
     // GET /api/categories/{id}
     @GetMapping("/{id}")
     public Category getCategoryById(@PathVariable Integer id) {
