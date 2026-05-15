@@ -13,6 +13,18 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartResponse {
+
     private List<CartItemResponse> items;
+
+    // subtotal
     private BigDecimal total;
+
+    // total cart weight
+    private BigDecimal totalWeightKg;
+
+    // calculated shipping
+    private BigDecimal shippingCost;
+
+    // subtotal + shipping
+    private BigDecimal grandTotal;
 }
