@@ -46,8 +46,8 @@ import java.util.List;
     private String adminNotes;         // admin only — excluded for user responses
 
     // Related objects (populated on detail views)
-    private AddressResponse shippingAddress;
-    private AddressResponse billingAddress;
+//    private AddressResponse shippingAddress;
+//    private AddressResponse billingAddress;
     private ShippingMethodSummary shippingMethod;
 
     private List<OrderItemResponse> items;

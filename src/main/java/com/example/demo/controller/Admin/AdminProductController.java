@@ -4,45 +4,46 @@ import com.example.demo.dto.response.ProductResponse;
 import com.example.demo.dto.response.ProductUpdateRequest;
 import com.example.demo.entity.Product;
 import com.example.demo.entity.Product.ProductStatus;
-import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.MediaType;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/admin/products")
+@RequestMapping("/admin/api/products")
 @CrossOrigin(origins = "*")
 public class AdminProductController {
 
     @Autowired
     private ProductService productService;
-    @Autowired
-    private ProductRepository productRepository;
 
-    // GET /api/products
+    // =====================================
+    // GET ALL PRODUCTS
+    // =====================================
     @GetMapping
     public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll()
-                .stream()
-                .map(ProductResponse::new)
-                .collect(Collectors.toList());
+        return productService.getAllProducts();
     }
 
+    // =====================================
+    // GET PRODUCT BY ID
+    // =====================================
     @GetMapping("/{id}")
     public ProductResponse getProductById(@PathVariable Integer id) {
         return productService.getProductById(id);
     }
 
-
+    // =====================================
+    // CREATE PRODUCT (NO DISCOUNT LOGIC HERE)
+    // Discount handled separately via ProductDiscountController
+    // =====================================
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProduct(
             @RequestParam String name,
@@ -55,18 +56,30 @@ public class AdminProductController {
             @RequestParam String status,
             @RequestParam String type,
             @RequestParam Integer categoryId,
-            @RequestParam MultipartFile image
+            @RequestParam(required = false) MultipartFile image
     ) {
-        productService.createProduct(
-                name, sku, price, cost, stock,
-                description, longDescription,
-                status,type, categoryId, image
+
+        Product product = productService.createProduct(
+                name,
+                sku,
+                price,
+                cost,// discountType removed (handled separately) // discountValue removed
+                stock,
+                description,
+                longDescription,
+                status,
+                type,
+                categoryId,
+                image
         );
 
-        return ResponseEntity.ok("Product created successfully");
+        return ResponseEntity.ok(product.getId());
     }
 
-    // UPDATE product
+    // =====================================
+    // UPDATE PRODUCT
+    // (Discount is NOT updated here - use ProductDiscountController)
+    // =====================================
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Product updateProduct(
             @PathVariable Integer id,
@@ -96,31 +109,49 @@ public class AdminProductController {
 
         return productService.updateProduct(id, data, image);
     }
-    // DELETE product
+
+    // =====================================
+    // DELETE PRODUCT (also deletes discount in service)
+    // =====================================
     @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteProduct(@PathVariable Integer id) {
         productService.deleteProduct(id);
+        return ResponseEntity.ok("Product deleted successfully");
     }
-    // GET /api/products/search?keyword=sofa
+
+    // =====================================
+    // SEARCH PRODUCTS
+    // =====================================
     @GetMapping("/search")
     public List<ProductResponse> searchProducts(@RequestParam String keyword) {
         return productService.searchProducts(keyword);
     }
 
-    // GET /api/products/featured
+    // =====================================
+    // FEATURED PRODUCTS
+    // =====================================
     @GetMapping("/featured")
     public List<ProductResponse> getFeaturedProducts() {
         return productService.getFeaturedProducts();
     }
 
-    // GET /api/products/{id}/related
+    // =====================================
+    // RELATED PRODUCTS
+    // =====================================
     @GetMapping("/{id}/related")
     public List<ProductResponse> getRelatedProducts(@PathVariable Integer id) {
         return productService.getRelatedProducts(id);
     }
+
+    // =====================================
+    // UPDATE PRODUCT STATUS
+    // =====================================
     @PatchMapping("/{id}/status")
-    public Product updateStatus(@PathVariable Integer id,
-                                @RequestBody Map<String, String> body) {
-        return productService.updateStatus(id, body.get("status"));
+    public ProductResponse updateStatus(
+            @PathVariable Integer id,
+            @RequestBody Map<String, String> body
+    ) {
+        Product updated = productService.updateStatus(id, body.get("status"));
+        return productService.mapToResponse(updated);
     }
 }

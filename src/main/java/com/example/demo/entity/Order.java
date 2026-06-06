@@ -82,6 +82,10 @@ public class Order {
     @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", length = 20)
+    private PaymentMethod paymentMethod;
+
     @Column(name = "customer_notes", columnDefinition = "TEXT")
     private String customerNotes;
 
@@ -155,7 +159,10 @@ public class Order {
         DELIVERED,
         CANCELLED,
         REFUNDED,
-        RETURNED
+        RETURNED,
+        // Lowercase aliases used by CheckoutService — stored as separate DB strings.
+        pending,
+        confirmed
     }
 
     public enum PaymentStatus {
@@ -163,6 +170,13 @@ public class Order {
         COMPLETED,
         FAILED,
         REFUNDED,
-        CANCELLED
+        CANCELLED,
+        // Lowercase aliases used by CheckoutService.
+        pending
+    }
+
+    public enum PaymentMethod {
+        COD,
+        PAYHERE
     }
 }

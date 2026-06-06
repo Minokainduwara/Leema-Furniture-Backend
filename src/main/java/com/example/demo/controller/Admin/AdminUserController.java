@@ -57,13 +57,7 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
     }
 
-    @GetMapping("/{id}/orders")
-    public ResponseEntity<?> getUserOrders(@PathVariable Integer id,
-                                           @RequestParam(defaultValue = "0") int page,
-                                           @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return ResponseEntity.ok(ApiResponse.success(adminUserService.getUserOrders(id, pageable)));
-    }
+    
 
     @GetMapping("/{id}/activity")
     public ResponseEntity<?> getUserActivity(@PathVariable Integer id,

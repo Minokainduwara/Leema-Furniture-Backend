@@ -3,9 +3,9 @@ package com.example.demo.config;
 import com.example.demo.security.CustomUserDetailsService;
 import com.example.demo.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -27,39 +27,75 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                .cors(cors -> {}) // keep this
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
+
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
                 .authorizeHttpRequests(auth -> auth
+
+                        // OPTIONS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // AUTH
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/repairs/**").permitAll()
-                        .requestMatchers("/api/orders/**").permitAll()
+
+                        // PUBLIC GET APIs
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+
+                        // CATEGORY MANAGEMENT (ADMIN + SELLER)
+                        .requestMatchers(HttpMethod.POST, "/api/categories/**")
+                        .hasAnyRole("ADMIN", "SELLER")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/categories/**")
+                        .hasAnyRole("ADMIN", "SELLER")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**")
+                        .hasAnyRole("ADMIN", "SELLER")
+
+                        // USER APIs
                         .requestMatchers("/api/dashboard/**").authenticated()
                         .requestMatchers("/api/users/me").authenticated()
-                        .requestMatchers(
-                                "/api/products/**",
-                                "/api/categories/**",
-                                "/uploads/**"
-                        ).permitAll()
+
+                        // FILES
                         .requestMatchers("/uploads/**").permitAll()
+
+                        // PAYHERE
+                        .requestMatchers("/api/payments/payhere/notify").permitAll()
+
+                        // SWAGGER
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
+
+                        // ADMIN ONLY
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // EVERYTHING ELSE
                         .anyRequest().authenticated()
                 )
+
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
+
         DaoAuthenticationProvider authProvider =
                 new DaoAuthenticationProvider(userDetailsService);
 
         authProvider.setPasswordEncoder(passwordEncoder());
+
         return authProvider;
     }
 
@@ -69,7 +105,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config
+    ) throws Exception {
+
         return config.getAuthenticationManager();
     }
 }

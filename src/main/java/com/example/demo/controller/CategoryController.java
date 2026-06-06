@@ -25,11 +25,6 @@ public class CategoryController {
         return categoryService.getAllCategoryResponses();
     }
 
-    // POST /api/categories
-    @PostMapping("/add")
-    public Category addCategory(@RequestBody Category category) {
-        return categoryService.addCategory(category);
-    }
     // GET /api/categories/{id}
     @GetMapping("/{id}")
     public Category getCategoryById(@PathVariable Integer id) {
@@ -46,8 +41,8 @@ public class CategoryController {
         return categoryService.getProductsByCategory(id);
     }
     @PostMapping
-    public CategoryDiscount create(@RequestBody CategoryDiscountRequest req) {
-        return categoryService.create(req);
+    public Category create(@RequestBody Category category) {
+        return categoryService.createCategory(category);
     }
 
     @PutMapping("/{id}")

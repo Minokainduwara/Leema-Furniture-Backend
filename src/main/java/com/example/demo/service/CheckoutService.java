@@ -4,13 +4,13 @@ import com.example.demo.dto.request.CheckoutRequest;
 import com.example.demo.dto.response.CheckoutResponse;
 import com.example.demo.entity.*;
 import com.example.demo.repository.*;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +22,6 @@ public class CheckoutService {
 
     private final CartItemRepository cartItemRepository;
 
-    private final ProductRepository productRepository;
-
     private final OrderRepository orderRepository;
 
     private final OrderItemRepository orderItemRepository;
@@ -34,11 +32,15 @@ public class CheckoutService {
 
     private final BillingAddressRepository billingAddressRepository;
 
-    private final InventoryLogService inventoryLogService;
+    private final ProductRepository productRepository;
 
-    // =========================================================
+    private final InvoiceRepository invoiceRepository;
+
+    private final EmailService emailService;
+
+    // =====================================================
     // CHECKOUT
-    // =========================================================
+    // =====================================================
 
     @Transactional
     public CheckoutResponse checkout(
@@ -46,56 +48,33 @@ public class CheckoutService {
             CheckoutRequest request
     ) {
 
-        // =====================================================
-        // USER
-        // =====================================================
+        // =================================================
+        // GET USER
+        // =================================================
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
 
-        // =====================================================
-        // CART
-        // =====================================================
+        // =================================================
+        // GET CART
+        // =================================================
 
-        Cart cart = cartRepository.findByUserId(user.getId())
+        Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() ->
                         new RuntimeException("Cart not found"));
 
-        List<CartItem> cartItems =
-                cartItemRepository.findByCart(cart);
-
-        if (cartItems.isEmpty()) {
+        if (cartItemRepository.findByCart(cart).isEmpty()) {
             throw new RuntimeException("Cart is empty");
         }
 
-        // =====================================================
-        // STOCK VALIDATION
-        // =====================================================
-
-        for (CartItem item : cartItems) {
-
-            Product product = productRepository.findById(
-                    item.getProductId()
-            ).orElseThrow(() ->
-                    new RuntimeException("Product not found"));
-
-            if (product.getStock() < item.getQuantity()) {
-
-                throw new RuntimeException(
-                        product.getName() +
-                                " does not have enough stock"
-                );
-            }
-        }
-
-        // =====================================================
-        // SHIPPING ADDRESS
-        // =====================================================
+        // =================================================
+        // CREATE SHIPPING ADDRESS
+        // =================================================
 
         ShippingAddress shippingAddress =
                 ShippingAddress.builder()
-                        .userId(user.getId())
+                        .user(user)
                         .fullName(request.getFullName())
                         .phoneNumber(request.getPhoneNumber())
                         .email(request.getEmail())
@@ -105,18 +84,17 @@ public class CheckoutService {
                         .stateProvince(request.getStateProvince())
                         .postalCode(request.getPostalCode())
                         .country(request.getCountry())
-                        .isDefault(false)
                         .build();
 
         shippingAddressRepository.save(shippingAddress);
 
-        // =====================================================
-        // BILLING ADDRESS
-        // =====================================================
+        // =================================================
+        // CREATE BILLING ADDRESS
+        // =================================================
 
         BillingAddress billingAddress =
                 BillingAddress.builder()
-                        .userId(user.getId())
+                        .user(user)
                         .fullName(request.getFullName())
                         .phoneNumber(request.getPhoneNumber())
                         .email(request.getEmail())
@@ -126,109 +104,104 @@ public class CheckoutService {
                         .stateProvince(request.getStateProvince())
                         .postalCode(request.getPostalCode())
                         .country(request.getCountry())
-                        .isDefault(false)
                         .build();
 
         billingAddressRepository.save(billingAddress);
 
-        // =====================================================
-        // TOTALS
-        // =====================================================
+        // =================================================
+        // CALCULATE TOTALS
+        // =================================================
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        for (CartItem item : cartItems) {
+        for (CartItem item : cartItemRepository.findByCart(cart)) {
+
+                if (item.getQuantity() > item.getProduct().getStock()) {
+
+                throw new RuntimeException(
+                        "Insufficient stock for product: "
+                        + item.getProduct().getName()
+                );
+                }
 
             BigDecimal itemTotal =
                     item.getAddedPrice()
-                            .multiply(
-                                    BigDecimal.valueOf(
-                                            item.getQuantity()
-                                    )
-                            );
+                            .multiply(BigDecimal.valueOf(item.getQuantity()));
 
             subtotal = subtotal.add(itemTotal);
         }
 
-        BigDecimal shippingCost =
-                BigDecimal.valueOf(971);
+        BigDecimal shippingCost = BigDecimal.valueOf(500);
 
-        BigDecimal totalAmount =
-                subtotal.add(shippingCost);
+        BigDecimal totalAmount = subtotal.add(shippingCost);
 
-        // =====================================================
+        // =================================================
         // CREATE ORDER
-        // =====================================================
+        // =================================================
+
+        Order.OrderStatus orderStatus =
+                request.getPaymentMethod().equals("COD")
+                        ? Order.OrderStatus.confirmed
+                        : Order.OrderStatus.pending;
+
+        Order.PaymentStatus paymentStatus =
+                Order.PaymentStatus.pending;
 
         Order order = Order.builder()
                 .user(user)
                 .shippingAddress(shippingAddress)
                 .billingAddress(billingAddress)
-                .orderNumber(
-                        "ORD-" +
-                                UUID.randomUUID()
-                                        .toString()
-                                        .substring(0, 8)
-                                        .toUpperCase()
-                )
                 .subtotal(subtotal)
                 .shippingCost(shippingCost)
                 .totalAmount(totalAmount)
                 .customerNotes(request.getCustomerNotes())
-                .status(Order.OrderStatus.PENDING)
-                .paymentStatus(Order.PaymentStatus.PENDING)
+                .paymentMethod(Order.PaymentMethod.valueOf(request.getPaymentMethod()))
+                .status(orderStatus)
+                .paymentStatus(paymentStatus)
                 .build();
 
         orderRepository.save(order);
 
-        // =====================================================
-        // ORDER ITEMS
-        // =====================================================
+        // =================================================
+        // CREATE ORDER ITEMS
+        // =================================================
 
-        for (CartItem item : cartItems) {
-
-            Product product = productRepository.findById(
-                    item.getProductId()
-            ).orElseThrow(() ->
-                    new RuntimeException("Product not found"));
+        for (CartItem item : cartItemRepository.findByCart(cart)) {
 
             BigDecimal itemSubtotal =
                     item.getAddedPrice()
-                            .multiply(
-                                    BigDecimal.valueOf(
-                                            item.getQuantity()
-                                    )
-                            );
+                            .multiply(BigDecimal.valueOf(item.getQuantity()));
 
-            OrderItem orderItem =
-                    OrderItem.builder()
-                            .order(order)
-                            .product(product)
-                            .quantity(item.getQuantity())
-                            .unitPrice(item.getAddedPrice())
-                            .subtotal(itemSubtotal)
-                            .tax(BigDecimal.ZERO)
-                            .total(itemSubtotal)
-                            .build();
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .product(item.getProduct())
+                    .quantity(item.getQuantity())
+                    .unitPrice(item.getAddedPrice())
+                    .subtotal(itemSubtotal)
+                    .total(itemSubtotal)
+                    .build();
 
-            orderItemRepository.save(orderItem);
-
-            // =================================================
-            // REDUCE STOCK
-            // =================================================
-
-            inventoryLogService.createLog(
-                    product.getId(),
-                    -item.getQuantity(),
-                    "purchase",
-                    order.getId(),
-                    "Stock reduced after checkout"
-            );
+            orderItemRepository.save(orderItem);            
         }
 
-        // =====================================================
-        // PAYMENT
-        // =====================================================
+        // =================================================
+        // REDUCE STOCK
+        // =================================================
+
+        for (CartItem item : cartItemRepository.findByCart(cart)) {
+
+        Product product = item.getProduct();
+
+        product.setStock(
+                product.getStock() - item.getQuantity()
+        );
+
+        productRepository.save(product);
+        }
+
+        // =================================================
+        // CREATE PAYMENT
+        // =================================================
 
         Payment payment = Payment.builder()
                 .order(order)
@@ -240,91 +213,48 @@ public class CheckoutService {
 
         paymentRepository.save(payment);
 
-        // =====================================================
+        
+        // =================================================
+        // CREATE INVOICE
+        // =================================================
+
+        Invoice invoice = Invoice.builder()
+                .order(order)
+                .payment(payment)
+                .subtotal(subtotal)
+                .shippingCost(shippingCost)
+                .totalAmount(totalAmount)
+                .build();
+
+        invoiceRepository.save(invoice);
+
+        // =================================================
+        // SEND ORDER CONFIRMATION EMAIL
+        // =================================================
+
+        emailService.sendOrderConfirmationEmail(
+                order
+        );
+
+        // =================================================
         // CLEAR CART
-        // =====================================================
+        // =================================================
 
-        cartItemRepository.deleteAll(cartItems);
+        cartItemRepository.deleteAll(
+                cartItemRepository.findByCart(cart)
+        );
 
-        // =====================================================
+        // =================================================
         // RESPONSE
-        // =====================================================
+        // =================================================
 
         return CheckoutResponse.builder()
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .paymentMethod(request.getPaymentMethod())
-                .paymentStatus(payment.getStatus().name())
+                .paymentStatus(order.getPaymentStatus().name())
                 .orderStatus(order.getStatus().name())
-                .message("Order placed successfully")
+                .message("Checkout completed successfully")
                 .build();
-    }
-
-    // =========================================================
-    // CANCEL ORDER
-    // =========================================================
-
-    @Transactional
-    public void cancelOrder(Integer orderId) {
-
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() ->
-                        new RuntimeException("Order not found"));
-
-        if (order.getStatus() ==
-                Order.OrderStatus.CANCELLED) {
-
-            throw new RuntimeException(
-                    "Order already cancelled"
-            );
-        }
-
-        List<OrderItem> orderItems =
-                orderItemRepository.findByOrder(order);
-
-        // =====================================================
-        // RESTORE STOCK
-        // =====================================================
-
-        for (OrderItem item : orderItems) {
-
-            inventoryLogService.createLog(
-                    item.getProduct().getId(),
-                    item.getQuantity(),
-                    "return",
-                    order.getId(),
-                    "Stock restored after cancellation"
-            );
-        }
-
-        // =====================================================
-        // UPDATE ORDER
-        // =====================================================
-
-        order.setStatus(Order.OrderStatus.CANCELLED);
-
-        order.setPaymentStatus(
-                Order.PaymentStatus.CANCELLED
-        );
-
-        orderRepository.save(order);
-
-        // =====================================================
-        // UPDATE PAYMENT
-        // =====================================================
-
-        Payment payment =
-                paymentRepository
-                        .findByOrderId(orderId)
-                        .orElse(null);
-
-        if (payment != null) {
-
-            payment.setStatus(
-                    Payment.PaymentStatus.cancelled
-            );
-
-            paymentRepository.save(payment);
-        }
     }
 }
