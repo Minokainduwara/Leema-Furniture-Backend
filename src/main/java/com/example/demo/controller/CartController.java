@@ -21,9 +21,7 @@ public class CartController {
     private final CartService cartService;
     private final UserRepository userRepository;
 
-    // =========================================================
-    // ADD TO CART
-    // =========================================================
+
 
     @PostMapping("/add")
     public ResponseEntity<CartItemResponse> addToCart(
@@ -42,9 +40,7 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
 
-    // =========================================================
-    // GET CART
-    // =========================================================
+
 
     @GetMapping
     public ResponseEntity<CartResponse> getCart(
@@ -61,9 +57,7 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
 
-    // =========================================================
-    // UPDATE CART ITEM
-    // =========================================================
+
 
     @PutMapping("/update/{itemId}")
     public ResponseEntity<CartItemResponse> updateCartItem(
@@ -83,9 +77,7 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
 
-    // =========================================================
-    // REMOVE CART ITEM
-    // =========================================================
+
 
     @DeleteMapping("/remove/{itemId}")
     public ResponseEntity<String> removeCartItem(
@@ -104,9 +96,6 @@ public class CartController {
         return ResponseEntity.ok("Item removed from cart");
     }
 
-    // =========================================================
-    // CLEAR CART
-    // =========================================================
 
     @DeleteMapping("/clear")
     public ResponseEntity<String> clearCart(
@@ -121,8 +110,6 @@ public class CartController {
         return ResponseEntity.ok("Cart cleared");
     }
 
-    // =========================================================
-    // APPLY COUPON
-    // =========================================================
+
 
     }

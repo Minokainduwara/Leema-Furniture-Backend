@@ -14,13 +14,13 @@ public class InventoryLogController {
     @Autowired
     private InventoryLogService inventoryLogService;
 
-    // ✅ GET ALL LOGS
+
     @GetMapping
     public List<InventoryLog> getAllLogs() {
         return inventoryLogService.getAllLogs();
     }
 
-    // ✅ GET LOGS BY PRODUCT ID
+
     @GetMapping("/product/{productId}")
     public List<InventoryLog> getLogsByProduct(@PathVariable Integer productId) {
         return inventoryLogService.getLogsByProduct(productId);

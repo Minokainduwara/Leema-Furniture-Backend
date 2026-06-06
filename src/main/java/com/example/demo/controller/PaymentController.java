@@ -14,7 +14,7 @@ import java.util.List;
 public class PaymentController {
     private final PaymentService paymentService;
 
-    // Payments
+
     @PostMapping("/initiate")
     public ResponseEntity<Payment> initiatePayment(@RequestBody Payment payment) {
         return ResponseEntity.ok(paymentService.initiatePayment(payment));

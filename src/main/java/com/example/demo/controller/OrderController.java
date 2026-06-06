@@ -19,13 +19,13 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    // ✅ GET ALL ORDERS
+
     @GetMapping("/all")
-    public List<Order> getAllOrders() {
+    public List<OrderResponse> getAllOrders() {
         return orderService.getAllOrders();
     }
 
-    // ✅ GET USER ORDERS
+
     @GetMapping
     public List<Order> getUserOrders(@RequestParam Integer userId,
                                      @RequestParam(defaultValue = "0") int page,
@@ -33,76 +33,76 @@ public class OrderController {
         return orderService.getUserOrders(userId, page, size);
     }
 
-    // ✅ GET ORDER BY ID
+
     @GetMapping("/{id}")
     public Order getOrderById(@PathVariable Integer id) {
         return orderService.getOrderById(id);
     }
 
-    // ✅ CREATE ORDER
+
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
         return orderService.createOrder(order);
     }
 
-    // ✅ CANCEL ORDER
+
     @PatchMapping("/{id}/cancel")
     public String cancelOrder(@PathVariable Integer id) {
         orderService.cancelOrder(id);
         return "Order cancelled successfully";
     }
 
-    // ✅ UPDATE STATUS
+
     @PatchMapping("/{id}/status")
     public Order updateStatus(@PathVariable Integer id,
                               @RequestBody Map<String, String> body) {
         return orderService.updateStatus(id, body.get("status"));
     }
 
-    // ✅ SELLER ORDERS
+
     @GetMapping("/{userId}/orders")
     public List<Order> getSellerOrders(@PathVariable Integer userId) {
         return orderService.getSellerOrders(userId);
     }
 
-    // ✅ SEARCH
+
     @GetMapping("/search")
     public List<Order> searchOrders(@RequestParam String query) {
         return orderService.searchOrders(query);
     }
 
-    // ✅ FILTER BY STATUS
+
     @GetMapping("/status")
     public List<Order> getByStatus(@RequestParam Order.OrderStatus status) {
         return orderService.getOrdersByStatus(status);
     }
 
-    // ✅ FILTER BY DATE
+
     @GetMapping("/filter")
     public List<Order> filterByDate(@RequestParam String type) {
         return orderService.filterByDate(type);
     }
 
-    // ✅ UPDATE PAYMENT STATUS
+
     @PatchMapping("/{id}/payment-status")
     public Order updatePaymentStatus(@PathVariable Integer id,
                                      @RequestBody Map<String, String> body) {
         return orderService.updatePaymentStatus(id, body.get("paymentStatus"));
     }
 
-    // ✅ RECENT ORDERS
+
     @GetMapping("/recent")
     public List<OrderResponse> getRecentOrders(Authentication auth) {
         return orderService.getRecentOrders(auth.getName());
     }
 
-    // 🔥 FIXED: ORDER HISTORY BY ORDER ID
+
     @GetMapping("/{orderId}/history")
     public List<OrderHistoryResponse> getOrderHistory(@PathVariable Integer orderId) {
         return orderService.getOrderHistoryByOrderId(orderId);
     }
 
-    // 🔥 FIXED: USER ORDER HISTORY
+
     @GetMapping("/user/{userId}/history")
     public List<OrderHistory> getUserOrderHistory(@PathVariable Integer userId) {
         return orderService.getOrderHistoryByUser(userId);

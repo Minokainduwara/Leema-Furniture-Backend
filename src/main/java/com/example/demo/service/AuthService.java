@@ -94,7 +94,7 @@ public class AuthService {
         );
     }
 
-    // ================= REFRESH =================
+
     public AuthResponse refresh(String refreshTokenStr) {
 
         RefreshToken oldToken = refreshTokenService.verifyToken(refreshTokenStr);
@@ -123,13 +123,13 @@ public class AuthService {
         );
     }
 
-    // ================= FIND USER =================
+
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // ================= LOGOUT =================
+
     public void logout(String refreshTokenStr) {
         try {
             RefreshToken refreshToken = refreshTokenService.verifyToken(refreshTokenStr);

@@ -35,9 +35,6 @@ public class CartService {
         this.productRepository = productRepository;
     }
 
-    // =========================================================
-    // ADD ITEM
-    // =========================================================
 
     @Transactional
     public CartItemResponse addItem(Integer userId, CartItemRequest request) {

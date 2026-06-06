@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.response.OrderHistoryResponse;
+import com.example.demo.dto.response.OrderItemResponse;
 import com.example.demo.dto.response.OrderResponse;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.OrderHistory;
@@ -28,9 +29,36 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
 
+    private OrderResponse map(Order order) {
+        return OrderResponse.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .status(order.getStatus().name())
+                .totalAmount(order.getTotalAmount())
+                .userId(order.getUser() != null ? order.getUser().getId() : null)
+                .userName(order.getCustomerName())
+                .userEmail(order.getUser() != null ? order.getUser().getEmail() : null)
+                .items(
+                        order.getOrderItems().stream().map(item ->
+                                OrderItemResponse.builder()
+                                        .id(item.getId())
+                                        .productId(item.getProduct().getId())
+                                        .productName(item.getProduct().getName())
+                                        .quantity(item.getQuantity())
+                                        .unitPrice(item.getUnitPrice())
+                                        .subtotal(item.getSubtotal())
+                                        .build()
+                        ).toList()
+                )
+                .build();
+    }
+
     // ================= GET ALL ORDERS =================
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll()
+                .stream()
+                .map(this::map)
+                .toList();
     }
 
     // ================= GET USER ORDERS =================

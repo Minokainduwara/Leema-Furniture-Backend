@@ -53,13 +53,14 @@ public class AdminProductController {
             @RequestParam String description,
             @RequestParam String longDescription,
             @RequestParam String status,
+            @RequestParam String type,
             @RequestParam Integer categoryId,
             @RequestParam MultipartFile image
     ) {
         productService.createProduct(
                 name, sku, price, cost, stock,
                 description, longDescription,
-                status, categoryId, image
+                status,type, categoryId, image
         );
 
         return ResponseEntity.ok("Product created successfully");

@@ -36,6 +36,10 @@ public class CategoryController {
         return categoryService.getCategoryById(id);
     }
 
+    @GetMapping("/active")
+    public List<CategoryResponse> getActiveCategories() {
+        return categoryService.getActiveCategoryResponses();
+    }
     // GET /api/categories/{id}/products
     @GetMapping("/{id}/products")
     public List<Product> getProductsByCategory(@PathVariable Integer id) {

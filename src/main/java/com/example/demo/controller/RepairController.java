@@ -17,7 +17,7 @@ public class RepairController {
     @Autowired
     private RepairService repairService;
 
-    // ✅ CREATE
+
     @PostMapping
     public Repair createRepair(@RequestBody RepairRequest body) {
 
@@ -29,13 +29,17 @@ public class RepairController {
                 body.getEstimatedCost()
         );
     }
-    // ✅ GET ALL
+
     @GetMapping
     public List<Repair> getAll() {
         return repairService.getAll();
     }
 
-    // ✅ FILTERS
+    @GetMapping("/order-user/{orderId}")
+    public List<Repair> getRepairsByOrderUser(@PathVariable Integer orderId) {
+        return repairService.getRepairsByOrderUser(orderId);
+    }
+
     @GetMapping("/user/{userId}")
     public List<Repair> getByUser(@PathVariable Integer userId) {
         return repairService.getByUser(userId);
@@ -56,7 +60,7 @@ public class RepairController {
         return repairService.getByStatus(status);
     }
 
-    // ✅ UPDATE STATUS
+
     @PatchMapping("/{id}/status")
     public Repair updateStatus(@PathVariable Integer id,
                                @RequestBody Map<String, String> body) {

@@ -43,7 +43,7 @@ public class UserController {
         return userService.updateProfile(authentication.getName(), request);
     }
 
-    // ================= PASSWORD =================
+
     @PutMapping("/change-password")
     public ResponseEntity<?> changePassword(
             Authentication authentication,
