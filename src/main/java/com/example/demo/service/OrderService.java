@@ -189,6 +189,17 @@ public class OrderService {
                 .toList();
     }
 
+    // ================= MY ORDERS =================
+    public List<OrderResponse> getMyOrders(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return orderRepository.findByUserId(user.getId())
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+
     // ================= ORDER HISTORY BY ORDER ID =================
     public List<OrderHistoryResponse> getOrderHistoryByOrderId(Integer orderId) {
 

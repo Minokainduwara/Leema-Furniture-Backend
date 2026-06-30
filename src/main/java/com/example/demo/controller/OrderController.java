@@ -96,6 +96,10 @@ public class OrderController {
         return orderService.getRecentOrders(auth.getName());
     }
 
+    @GetMapping("/my-orders")
+    public List<OrderResponse> getMyOrders(Authentication auth) {
+        return orderService.getMyOrders(auth.getName());
+    }
 
     @GetMapping("/{orderId}/history")
     public List<OrderHistoryResponse> getOrderHistory(@PathVariable Integer orderId) {

@@ -1,4 +1,4 @@
-package com.example.demo.dto.request;
+package com.example.demo.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddressRequest {
+public class AddressResponse {
+    private Integer id;
     private String fullName;
     private String phoneNumber;
     private String email;
