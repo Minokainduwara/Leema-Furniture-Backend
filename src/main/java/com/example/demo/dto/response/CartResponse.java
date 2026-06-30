@@ -1,16 +1,18 @@
 package com.example.demo.dto.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.util.List;
 
-public record CartResponse(
-        Integer cartId,
-        List<CartItemResponse> items,
-        String couponCode,
-        BigDecimal subtotal,
-        BigDecimal tax,
-        BigDecimal shippingCost,
-        BigDecimal discountAmount,
-        BigDecimal total
-) {
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class CartResponse {
+    private List<CartItemResponse> items;
+    private BigDecimal total;
 }

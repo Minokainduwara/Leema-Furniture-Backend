@@ -18,6 +18,7 @@ public class ProductUpdateRequest {
     private Product.ProductStatus status;
     private Integer categoryId;
     private String image;
+    private Product.ProductType type;
 
     public void setName(String name) {
         this.name = name;
@@ -58,7 +59,9 @@ public class ProductUpdateRequest {
     public void setImage(String image) {
         this.image = image;
     }
-
+    public void setType(Product.ProductType type) {
+        this.type = type;
+    }
     public String getName() {
         return name;
     }
@@ -97,5 +100,8 @@ public class ProductUpdateRequest {
 
     public String getImage() {
         return image;
+    }
+    public Product.ProductType getType() {
+        return type;
     }
 }

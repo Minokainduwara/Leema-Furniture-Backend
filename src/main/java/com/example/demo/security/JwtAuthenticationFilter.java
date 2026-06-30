@@ -32,10 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
 
 // skip auth endpoints
-        if (path.startsWith("/api/auth") ||
-                path.startsWith("/api/products") ||
-                path.startsWith("/api/categories") ||
-                path.startsWith("/uploads")) {
+        if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -49,25 +46,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                Jws<Claims> claims = jwtService.parseToken(token);
-                String username = claims.getBody().getSubject();
+                Claims claims = jwtService.extractAllClaims(token);
+
+                String username = claims.getSubject();
 
                 if (username != null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-            } catch (ExpiredJwtException ex) {
-                // token expired
-            } catch (JwtException ex) {
-                System.out.println("JWT INVALID: " + ex.getMessage());
+
+            } catch (Exception ex) {
+                System.out.println("JWT ERROR: " + ex.getMessage());
             }
         }
-
         filterChain.doFilter(request, response);
     }
 }

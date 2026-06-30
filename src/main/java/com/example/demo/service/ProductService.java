@@ -73,11 +73,21 @@ public class ProductService {
             String description,
             String longDescription,
             String status,
+            String type,
             Integer categoryId,
             MultipartFile image
     ) {
 
-        if (productRepository.findBySku(sku).isPresent()) {
+        // validate 4 digits
+        if (!sku.matches("\\d{4}")) {
+            throw new RuntimeException("SKU must be exactly 4 digits");
+        }
+
+// build final SKU
+        String finalSku = "AD" + sku;
+
+// check duplicate
+        if (productRepository.findBySku(finalSku).isPresent()) {
             throw new RuntimeException("SKU already exists");
         }
 
@@ -85,19 +95,27 @@ public class ProductService {
 
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
+        if (type == null || type.isBlank()) {
+            throw new RuntimeException("Product type is required");
+        }
 
         Product product = new Product();
         product.setName(name);
-        product.setSku(sku);
+        product.setSku(finalSku);
         product.setPrice(price);
         product.setCost(cost);
         product.setStock(stock);
         product.setDescription(description);
         product.setLongDescription(longDescription);
         product.setStatus(ProductStatus.valueOf(status.toUpperCase()));
+        product.setType(Product.ProductType.valueOf(type.toUpperCase()));
         product.setImage(imagePath);
         product.setCategory(category);
-
+        if (product.getType() == Product.ProductType.TEKA) {
+            product.setWarrantyYears(2);
+        } else {
+            product.setWarrantyYears(15);
+        }
         product.setCreatedAt(LocalDateTime.now());
         product.setFeatured(false);
         product.setRating(BigDecimal.ZERO);
@@ -130,7 +148,14 @@ public class ProductService {
         if (data.getStatus() != null) {
             product.setStatus(data.getStatus());
         }
-
+        if (data.getType() != null) {
+            product.setType(data.getType());
+        }
+        if (product.getType() == Product.ProductType.TEKA) {
+            product.setWarrantyYears(2);
+        } else {
+            product.setWarrantyYears(15);
+        }
         if (data.getCategoryId() != null) {
             Category category = categoryRepository.findById(data.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
@@ -265,6 +290,23 @@ public class ProductService {
             }
         }
 
-        return new ProductResponse(product, type, value, finalPrice);
+        String productType = product.getType() != null
+                ? product.getType().name()
+                : null;
+
+        if (product.getWarrantyYears() == null) {
+            if (product.getType() == Product.ProductType.TEKA) {
+                product.setWarrantyYears(2);
+            } else {
+                product.setWarrantyYears(15);
+            }
+        }
+
+        ProductResponse response = new ProductResponse(product, type, value, finalPrice, productType, product.getWarrantyYears());
+
+
+
+
+        return response;
     }
 }

@@ -1,367 +1,133 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.request.CartItemRequest;
+import com.example.demo.dto.request.AddToCartRequest;
+import com.example.demo.dto.request.RemoveCartItemRequest;
+import com.example.demo.dto.request.UpdateCartItemRequest;
 import com.example.demo.dto.response.CartItemResponse;
 import com.example.demo.dto.response.CartResponse;
 import com.example.demo.entity.Cart;
 import com.example.demo.entity.CartItem;
 import com.example.demo.entity.Product;
+import com.example.demo.entity.User;
 import com.example.demo.repository.CartItemRepository;
 import com.example.demo.repository.CartRepository;
 import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CartService {
 
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-    public CartService(
-            CartRepository cartRepository,
-            CartItemRepository cartItemRepository,
-            ProductRepository productRepository
-    ) {
-        this.cartRepository = cartRepository;
-        this.cartItemRepository = cartItemRepository;
-        this.productRepository = productRepository;
-    }
-
-    // =========================================================
-    // ADD ITEM
-    // =========================================================
-
-    @Transactional
-    public CartItemResponse addItem(Integer userId, CartItemRequest request) {
-
-        if (userId == null || request == null ||
-                request.productId() == null ||
-                request.quantity() == null) {
-
-            throw new IllegalArgumentException(
-                    "userId, productId, and quantity are required"
-            );
-        }
-
-        Product product = productRepository
-                .findById(request.productId())
-                .orElseThrow(() ->
-                        new RuntimeException("Product not found")
-                );
-
-        // ✅ STOCK VALIDATION
-        if (request.quantity() > product.getStock()) {
-            throw new RuntimeException(
-                    "Only " + product.getStock() + " items available in stock"
-            );
-        }
-
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseGet(() -> {
-
-                    Cart newCart = new Cart();
-
-                    newCart.setUserId(userId);
-                    newCart.setCreatedAt(LocalDateTime.now());
-                    newCart.setUpdatedAt(LocalDateTime.now());
-
-                    return cartRepository.save(newCart);
-                });
-
-        LocalDateTime now = LocalDateTime.now();
-
-        CartItem cartItem = cartItemRepository
-                .findByCartIdAndProductId(
-                        cart.getId(),
-                        request.productId()
-                )
-                .orElseGet(CartItem::new);
-
-        if (cartItem.getId() == null) {
-
-            cartItem.setCart(cart);
-            cartItem.setProductId(request.productId());
-            cartItem.setQuantity(request.quantity());
-
-            cartItem.setAddedPrice(
-                    request.addedPrice() == null
-                            ? BigDecimal.ZERO
-                            : request.addedPrice()
-            );
-
-            cartItem.setCreatedAt(now);
-
-        } else {
-
-            Integer newQuantity =
-                    cartItem.getQuantity() + request.quantity();
-
-            // ✅ VALIDATE UPDATED QUANTITY
-            if (newQuantity > product.getStock()) {
-                throw new RuntimeException(
-                        "Only " + product.getStock() + " items available in stock"
-                );
-            }
-
-            cartItem.setQuantity(newQuantity);
-
-            if (request.addedPrice() != null) {
-                cartItem.setAddedPrice(request.addedPrice());
-            }
-        }
-
-        cart.setUpdatedAt(now);
-        cartItem.setUpdatedAt(now);
-
-        CartItem savedItem = cartItemRepository.save(cartItem);
-
-        return new CartItemResponse(
-                savedItem.getId(),
-                savedItem.getProductId(),
-                product.getName(),
-                product.getImage(),
-                savedItem.getQuantity(),
-                product.getStock(),
-                savedItem.getAddedPrice(),
-                savedItem.getCreatedAt(),
-                savedItem.getUpdatedAt()
-        );
-    }
-
-    // =========================================================
-    // GET CART
-    // =========================================================
-
     @Transactional(readOnly = true)
-    public CartResponse getCart(Integer userId) {
-
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-
-        return buildCartResponse(userId);
+    public CartResponse getCart(String email) {
+        Cart cart = getOrCreateCart(email);
+        return buildResponse(cart);
     }
-
-    // =========================================================
-    // UPDATE ITEM
-    // =========================================================
 
     @Transactional
-    public CartItemResponse updateItem(
-            Integer itemId,
-            CartItemRequest request
-    ) {
+    public CartResponse addToCart(String email, AddToCartRequest req) {
+        Cart cart = getOrCreateCart(email);
+        Product product = productRepository.findById(req.getProductId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
-        if (itemId == null ||
-                request == null ||
-                request.quantity() == null) {
+        CartItem item = cartItemRepository.findByCartAndProduct(cart, product)
+                .orElseGet(() -> CartItem.builder()
+                        .cart(cart)
+                        .product(product)
+                        .quantity(0)
+                        .addedPrice(product.getPrice() == null ? BigDecimal.ZERO : product.getPrice())
+                        .build());
 
-            throw new IllegalArgumentException(
-                    "itemId and quantity are required"
-            );
-        }
+        item.setQuantity(item.getQuantity() + req.getQuantity());
+        cartItemRepository.save(item);
 
-        CartItem item = cartItemRepository.findById(itemId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Cart item not found")
-                );
-
-        Product product = productRepository
-                .findById(item.getProductId())
-                .orElseThrow(() ->
-                        new RuntimeException("Product not found")
-                );
-
-        // ✅ STOCK VALIDATION
-        if (request.quantity() > product.getStock()) {
-            throw new RuntimeException(
-                    "Only " + product.getStock() + " items available in stock"
-            );
-        }
-
-        if (request.quantity() <= 0) {
-
-            item.getCart().getItems()
-                    .removeIf(existing ->
-                            existing.getId().equals(itemId));
-
-            item.getCart().setUpdatedAt(LocalDateTime.now());
-
-            return new CartItemResponse(
-                    itemId,
-                    item.getProductId(),
-                    product.getName(),
-                    product.getImage(),
-                    0,
-                    product.getStock(),
-                    item.getAddedPrice(),
-                    item.getCreatedAt(),
-                    LocalDateTime.now()
-            );
-        }
-
-        item.setQuantity(request.quantity());
-
-        if (request.addedPrice() != null) {
-            item.setAddedPrice(request.addedPrice());
-        }
-
-        item.setUpdatedAt(LocalDateTime.now());
-        item.getCart().setUpdatedAt(LocalDateTime.now());
-
-        cartRepository.save(item.getCart());
-
-        CartItem saved = cartItemRepository.save(item);
-
-        return new CartItemResponse(
-                saved.getId(),
-                saved.getProductId(),
-                product.getName(),
-                product.getImage(),
-                saved.getQuantity(),
-                product.getStock(),
-                saved.getAddedPrice(),
-                saved.getCreatedAt(),
-                saved.getUpdatedAt()
-        );
+        return buildResponse(cart);
     }
-
-    // =========================================================
-    // REMOVE ITEM
-    // =========================================================
 
     @Transactional
-    public void removeItem(Integer itemId, Integer userId) {
+    public CartResponse updateItem(String email, UpdateCartItemRequest req) {
+        Cart cart = getOrCreateCart(email);
+        Product product = productRepository.findById(req.getProductId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
-        if (itemId == null) {
-            throw new IllegalArgumentException("itemId is required");
+        CartItem item = cartItemRepository.findByCartAndProduct(cart, product)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not in cart"));
+
+        if (req.getQuantity() <= 0) {
+            cartItemRepository.delete(item);
+        } else {
+            item.setQuantity(req.getQuantity());
+            cartItemRepository.save(item);
         }
 
-        CartItem item = cartItemRepository.findById(itemId)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Cart item not found")
-                );
-
-        if (userId != null &&
-                !userId.equals(item.getCart().getUserId())) {
-
-            throw new IllegalArgumentException(
-                    "Cart item does not belong to the specified user"
-            );
-        }
-
-        Cart cart = item.getCart();
-
-        cart.getItems().removeIf(existing ->
-                existing.getId().equals(itemId));
-
-        cart.setUpdatedAt(LocalDateTime.now());
-
-        cartRepository.save(cart);
+        return buildResponse(cart);
     }
-
-    // =========================================================
-    // CLEAR CART
-    // =========================================================
 
     @Transactional
-    public void clearCart(Integer userId) {
+    public CartResponse removeItem(String email, RemoveCartItemRequest req) {
+        Cart cart = getOrCreateCart(email);
+        Product product = productRepository.findById(req.getProductId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
+        cartItemRepository.findByCartAndProduct(cart, product)
+                .ifPresent(cartItemRepository::delete);
 
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElse(null);
-
-        if (cart == null) {
-            return;
-        }
-
-        cart.getItems().clear();
-        cart.setUpdatedAt(LocalDateTime.now());
-
-        cartRepository.save(cart);
+        return buildResponse(cart);
     }
 
-    // =========================================================
-    // HELPER METHODS
-    // =========================================================
-
-    private CartResponse buildCartResponse(Integer userId) {
-
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElse(null);
-
-        if (cart == null) {
-
-            return new CartResponse(
-                    null,
-                    List.of(),
-                    null,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO,
-                    BigDecimal.ZERO
-            );
-        }
-
-        List<CartItemResponse> items = new ArrayList<>();
-
-        BigDecimal subtotal = calculateSubtotal(cart);
-
-        for (CartItem item : cart.getItems()) {
-
-            Product product = productRepository
-                    .findById(item.getProductId())
-                    .orElse(null);
-
-            items.add(new CartItemResponse(
-                    item.getId(),
-                    item.getProductId(),
-                    product != null ? product.getName() : null,
-                    product != null ? product.getImage() : null,
-                    item.getQuantity(),
-                    product != null ? product.getStock() : 0,
-                    item.getAddedPrice(),
-                    item.getCreatedAt(),
-                    item.getUpdatedAt()
-            ));
-        }
-
-        BigDecimal discount = BigDecimal.ZERO;
-
-        BigDecimal total = subtotal;
-
-        return new CartResponse(
-                cart.getId(),
-                items,
-                null,
-                subtotal.setScale(2, RoundingMode.HALF_UP),
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                discount.setScale(2, RoundingMode.HALF_UP),
-                total.setScale(2, RoundingMode.HALF_UP)
-        );
+    @Transactional
+    public void clearCart(String email) {
+        Cart cart = cartRepository.findByUser(getUser(email)).orElse(null);
+        if (cart == null) return;
+        cartItemRepository.deleteByCart(cart);
     }
 
-    private BigDecimal calculateSubtotal(Cart cart) {
+    // ─── helpers ─────────────────────────────────────────────────────────────
 
-        return cart.getItems().stream()
-                .map(i ->
-                        i.getAddedPrice().multiply(
-                                BigDecimal.valueOf(i.getQuantity())
-                        )
-                )
+    private User getUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+    }
+
+    private Cart getOrCreateCart(String email) {
+        User user = getUser(email);
+        return cartRepository.findByUser(user)
+                .orElseGet(() -> cartRepository.save(Cart.builder().user(user).build()));
+    }
+
+    private CartResponse buildResponse(Cart cart) {
+        List<CartItem> items = cartItemRepository.findByCart(cart);
+
+        List<CartItemResponse> dtos = items.stream().map(it -> {
+            BigDecimal price = it.getAddedPrice() == null ? BigDecimal.ZERO : it.getAddedPrice();
+            BigDecimal line = price.multiply(BigDecimal.valueOf(it.getQuantity()));
+            return CartItemResponse.builder()
+                    .productId(it.getProduct().getId())
+                    .productName(it.getProduct().getName())
+                    .productImage(it.getProduct().getImage())
+                    .quantity(it.getQuantity())
+                    .price(price)
+                    .lineTotal(line)
+                    .build();
+        }).toList();
+
+        BigDecimal total = dtos.stream()
+                .map(CartItemResponse::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return CartResponse.builder().items(dtos).total(total).build();
     }
 }

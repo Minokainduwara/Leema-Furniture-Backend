@@ -3,7 +3,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
-import com.example.demo.entity.OrderItem;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -89,13 +88,27 @@ public class Product {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        setWarrantyBasedOnType();
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        setWarrantyBasedOnType();
     }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    private ProductType type;
+    @Column(name = "warranty_years")
+    private Integer warrantyYears;
 
+    private void setWarrantyBasedOnType() {
+        if (this.type == ProductType.TEKA) {
+            this.warrantyYears = 2;
+        } else {
+            this.warrantyYears = 15;
+        }
+    }
     // ================= ENUM =================
 
     public enum ProductStatus {
@@ -103,5 +116,9 @@ public class Product {
         INACTIVE,
         DISCONTINUED,
         DRAFT
+    }
+    public enum ProductType {
+        TEKA,
+        OTHER
     }
 }

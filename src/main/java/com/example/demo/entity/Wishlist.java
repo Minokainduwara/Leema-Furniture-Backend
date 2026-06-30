@@ -2,31 +2,34 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-@Getter
-@Setter
 @Entity
-@Table(name = "wishlists", uniqueConstraints = {
-        @UniqueConstraint(name = "unique_user_wishlist", columnNames = "user_id")
-})
+@Table(name = "wishlists",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "unique_user_wishlist",
+                        columnNames = "user_id"
+                )
+        },
+        indexes = {
+                @Index(name = "idx_user_id", columnList = "user_id")
+        }
+)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Wishlist {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "user_id", nullable = false)
-    private Integer userId;
-
-    @OneToMany(mappedBy = "wishlist", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<WishlistItem> items = new ArrayList<>();
+    // One user has one wishlist
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -34,11 +37,15 @@ public class Wishlist {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Wishlist() {
-        // Required by JPA.
+    // Auto timestamps
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

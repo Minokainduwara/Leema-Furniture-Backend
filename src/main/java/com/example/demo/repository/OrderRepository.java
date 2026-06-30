@@ -5,8 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,4 +36,35 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     int countByUser_Email(String email);
     int countByUser_EmailAndStatus(String email, Order.OrderStatus status);
     List<Order> findTop5ByUser_EmailOrderByCreatedAtDesc(String email);
+
+    @Query("""
+            SELECT o FROM Order o
+            WHERE (:status        IS NULL OR o.status        = :status)
+              AND (:paymentStatus IS NULL OR o.paymentStatus = :paymentStatus)
+              AND (:from          IS NULL OR CAST(o.createdAt AS date) >= :from)
+              AND (:to            IS NULL OR CAST(o.createdAt AS date) <= :to)
+              AND (:userId        IS NULL OR o.user.id        = :userId)
+            """)
+    Page<Order> findWithAdminFilters(
+            @Param("status")        String status,
+            @Param("paymentStatus") String paymentStatus,
+            @Param("from")          LocalDate from,
+            @Param("to") LocalDate to,
+            @Param("userId")        Integer userId,
+            Pageable pageable);
+
+    // ── Analytics: counts ─────────────────────────────────────────────────────
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status")
+    long countByStatus(@Param("status") String status);
+
+    // ── Analytics: platform-wide revenue ─────────────────────────────────────
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.paymentStatus = 'COMPLETED'")
+    BigDecimal sumTotalRevenue();
+    List<Order> findTop5ByUser_IdOrderByCreatedAtDesc(Integer userId);
+    List<Order> findByCreatedAtAfter(LocalDateTime dateTime);
+    List<Order> findByUser_Id(Integer userId);
+
+    // ✅ Search by order number
+    List<Order> findByOrderNumberContainingIgnoreCase(String query);
+
 }

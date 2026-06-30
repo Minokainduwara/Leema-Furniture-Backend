@@ -19,11 +19,17 @@ public class ProductResponse {
     private String discountType;
     private BigDecimal discountValue;
     private BigDecimal finalPrice;
-
+    private String productType;
+    private Integer warrantyYears;
+    public ProductResponse(Product product) {
+        this(product, null, null, null,null,null);
+    }
     public ProductResponse(Product product,
                            String discountType,
                            BigDecimal discountValue,
-                           BigDecimal finalPrice) {
+                           BigDecimal finalPrice,
+                           String productType,
+                           Integer warrantyYears) {
 
         this.id = product.getId();
         this.name = product.getName();
@@ -44,6 +50,9 @@ public class ProductResponse {
         this.discountType = discountType;
         this.discountValue = discountValue;
         this.finalPrice = finalPrice;
+        this.productType = productType;
+        this.warrantyYears = warrantyYears;
+
     }
     public BigDecimal getCost() {
         return cost;
@@ -117,6 +126,14 @@ public class ProductResponse {
     public BigDecimal getFinalPrice() {
         return finalPrice;
     }
+    public String getProductType() {
+        return productType;
+    }
 
-
+    public Integer getWarrantyYears() {
+        return warrantyYears;
+    }
+    public void setWarrantyYears(Integer warrantyYears) {
+        this.warrantyYears = warrantyYears;
+    }
 }
