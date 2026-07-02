@@ -66,21 +66,47 @@ public class CheckoutService {
         // GET ADDRESSES
         // =================================================
 
-        ShippingAddress shippingAddress =
-                shippingAddressRepository.findById(
-                        request.getShippingAddressId()
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Shipping address not found"
-                        ));
+        ShippingAddress shippingAddress;
+        if (request.getShippingAddressId() != null) {
+            shippingAddress = shippingAddressRepository.findById(request.getShippingAddressId())
+                    .orElseThrow(() -> new RuntimeException("Shipping address not found"));
+        } else {
+            shippingAddress = ShippingAddress.builder()
+                    .user(user)
+                    .fullName(request.getFullName())
+                    .phoneNumber(request.getPhoneNumber())
+                    .email(request.getEmail())
+                    .streetAddress(request.getStreetAddress())
+                    .apartmentSuite(request.getApartmentSuite())
+                    .city(request.getCity())
+                    .stateProvince(request.getStateProvince())
+                    .postalCode(request.getPostalCode())
+                    .country(request.getCountry())
+                    .isDefault(false)
+                    .build();
+            shippingAddress = shippingAddressRepository.save(shippingAddress);
+        }
 
-        BillingAddress billingAddress =
-                billingAddressRepository.findById(
-                        request.getBillingAddressId()
-                ).orElseThrow(() ->
-                        new RuntimeException(
-                                "Billing address not found"
-                        ));
+        BillingAddress billingAddress;
+        if (request.getBillingAddressId() != null) {
+            billingAddress = billingAddressRepository.findById(request.getBillingAddressId())
+                    .orElseThrow(() -> new RuntimeException("Billing address not found"));
+        } else {
+            billingAddress = BillingAddress.builder()
+                    .user(user)
+                    .fullName(request.getFullName())
+                    .phoneNumber(request.getPhoneNumber())
+                    .email(request.getEmail())
+                    .streetAddress(request.getStreetAddress())
+                    .apartmentSuite(request.getApartmentSuite())
+                    .city(request.getCity())
+                    .stateProvince(request.getStateProvince())
+                    .postalCode(request.getPostalCode())
+                    .country(request.getCountry())
+                    .isDefault(false)
+                    .build();
+            billingAddress = billingAddressRepository.save(billingAddress);
+        }
 
         // =================================================
         // CALCULATE TOTALS
@@ -197,11 +223,11 @@ public class CheckoutService {
 
         Order.OrderStatus orderStatus =
                 request.getPaymentMethod().equals("COD")
-                        ? Order.OrderStatus.confirmed
-                        : Order.OrderStatus.pending;
+                        ? Order.OrderStatus.CONFIRMED
+                        : Order.OrderStatus.PENDING;
 
         Order.PaymentStatus paymentStatus =
-                Order.PaymentStatus.pending;
+                Order.PaymentStatus.PENDING;
 
         Order order = Order.builder()
                 .user(user)
@@ -272,7 +298,7 @@ public class CheckoutService {
                 .user(user)
                 .amount(totalAmount)
                 .gateway(request.getPaymentMethod())
-                .status(Payment.PaymentStatus.pending)
+                .status(Payment.PaymentStatus.PENDING)
                 .build();
 
         paymentRepository.save(payment);

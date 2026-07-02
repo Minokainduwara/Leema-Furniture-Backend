@@ -159,10 +159,7 @@ public class Order {
         DELIVERED,
         CANCELLED,
         REFUNDED,
-        RETURNED,
-        // Lowercase aliases used by CheckoutService — stored as separate DB strings.
-        pending,
-        confirmed
+        RETURNED
     }
 
     public enum PaymentStatus {
@@ -170,9 +167,7 @@ public class Order {
         COMPLETED,
         FAILED,
         REFUNDED,
-        CANCELLED,
-        // Lowercase aliases used by CheckoutService.
-        pending
+        CANCELLED
     }
 
     public enum PaymentMethod {

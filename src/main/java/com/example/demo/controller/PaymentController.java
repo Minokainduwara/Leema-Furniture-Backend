@@ -53,13 +53,27 @@ public class PaymentController {
             String orderId = String.valueOf(body.get("orderId"));
             String currency = String.valueOf(body.getOrDefault("currency", "LKR"));
 
+            // Fetch order securely to get exact amount rather than trusting frontend
+            Order order = orderService.getOrderById(Integer.parseInt(orderId));
+
             // Format amount exactly the way PayHere expects: two decimal places
-            BigDecimal amountBd = new BigDecimal(String.valueOf(body.get("amount")))
-                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal amountBd = order.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
             String amount = amountBd.toPlainString();
 
             String hashedSecret = md5(merchantSecret).toUpperCase();
-            String hash = md5(merchantId + orderId + amount + currency + hashedSecret).toUpperCase();
+            String hashInput = merchantId + orderId + amount + currency + hashedSecret;
+            String hash = md5(hashInput).toUpperCase();
+
+            System.out.println("=== PAYHERE HASH DEBUG ===");
+            System.out.println("merchantId: [" + merchantId + "]");
+            System.out.println("orderId: [" + orderId + "]");
+            System.out.println("amount: [" + amount + "]");
+            System.out.println("currency: [" + currency + "]");
+            System.out.println("merchantSecret: [" + merchantSecret + "]");
+            System.out.println("hashedSecret: [" + hashedSecret + "]");
+            System.out.println("hashInput: [" + hashInput + "]");
+            System.out.println("hash: [" + hash + "]");
+            System.out.println("==========================");
 
             Map<String, Object> response = new HashMap<>();
             response.put("sandbox", sandbox);
