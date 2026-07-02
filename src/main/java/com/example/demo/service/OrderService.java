@@ -242,6 +242,17 @@ public class OrderService {
         return List.of();
     }
 
+    // ================= ORDER STATUS =================
+    public Order updateOrderStatus(Integer id, String status) {
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        order.setStatus(Order.OrderStatus.valueOf(status.toUpperCase()));
+
+        return orderRepository.save(order);
+    }
+
     // ================= PAYMENT STATUS =================
     public Order updatePaymentStatus(Integer id, String status) {
 

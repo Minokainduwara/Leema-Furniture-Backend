@@ -34,6 +34,11 @@ public class Product {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
+    // Many products belong to one seller (user)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 

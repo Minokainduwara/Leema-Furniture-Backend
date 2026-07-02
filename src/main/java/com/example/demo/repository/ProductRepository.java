@@ -16,5 +16,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> findByStatus(Product.ProductStatus status);
     Optional<Product> findBySku(String sku);
     long countByCategory_Id(Integer categoryId);
+    long countByUserId(Integer userId);
     long count();
 }

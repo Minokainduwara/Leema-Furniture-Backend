@@ -34,6 +34,23 @@ public interface UserRepository extends JpaRepository<User, Integer> {
             @Param("search") String search,
             Pageable pageable);
 
+    // ── Admin Seller: filter sellers by status / search ─────────────────────────
+    @Query("""
+            SELECT u FROM User u
+            WHERE u.role = :role
+              AND (:status IS NULL OR u.status = :status)
+              AND (:search IS NULL
+                   OR LOWER(u.name)  LIKE LOWER(CONCAT('%', :search, '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')))
+            """)
+    Page<User> findByRoleAndFilters(
+            @Param("role") User.Role role,
+            @Param("status") User.Status status,
+            @Param("search") String search,
+            Pageable pageable);
+
+    List<User> findByRole(User.Role role);
+
     // ── Analytics: count by status string ────────────────────────────────────
     @Query("SELECT COUNT(u) FROM User u WHERE u.status = :status")
     long countByStatus(@Param("status") User.Status status);
