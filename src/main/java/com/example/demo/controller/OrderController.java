@@ -88,10 +88,17 @@ public class OrderController {
         return orderService.updatePaymentStatus(id, body.get("paymentStatus"));
     }
 
-
+    @GetMapping("/pending")
+    public List<OrderResponse> getPendingOrders() {
+        return orderService.getPendingOrders();
+    }
     @GetMapping("/recent")
     public List<OrderResponse> getRecentOrders(Authentication auth) {
         return orderService.getRecentOrders(auth.getName());
+    }
+    @GetMapping("/pending/count")
+    public long getPendingOrderCount() {
+        return orderService.getPendingOrderCount();
     }
 
 

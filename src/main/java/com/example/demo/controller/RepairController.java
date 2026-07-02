@@ -39,6 +39,10 @@ public class RepairController {
                 Repair.ServiceType.valueOf(body.getType().toUpperCase())
         );
     }
+    @GetMapping("/seller/pending")
+    public List<Repair> getPendingSellerRepairs() {
+        return repairService.getRepairsByStatus("REQUESTED");
+    }
     @PatchMapping("/{id}/update")
     public Repair updateRepair(
             @PathVariable Integer id,

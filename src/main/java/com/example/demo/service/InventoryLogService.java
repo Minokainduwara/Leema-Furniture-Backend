@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.response.InventorySummery;
 import com.example.demo.entity.InventoryLog;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.Product;
@@ -23,6 +24,14 @@ public class InventoryLogService {
     @Autowired
     private OrderRepository orderRepository;
 
+    public InventorySummery getInventorySummary() {
+
+        return InventorySummery.builder()
+                .totalProducts(productRepository.countAllProducts())
+                .inStock(productRepository.countInStock())
+                .lowStock(productRepository.countLowStock())
+                .build();
+    }
     // ✅ CREATE LOG (used in OrderService)
     public void createLog(
             Integer productId,

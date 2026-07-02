@@ -20,4 +20,10 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     Optional<Product> findBySku(String sku);
     long countByCategory_Id(Integer categoryId);
     long countByDeletedAtIsNullAndStatus(Product.ProductStatus status);
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.stock > 0")
+    Long countInStock();
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.stock < 5")
+    Long countLowStock();
+    @Query("SELECT COUNT(p) FROM Product p")
+    Long countAllProducts();
 }

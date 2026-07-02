@@ -69,6 +69,11 @@ public class RepairService {
 
         return repairRepository.save(repair);
     }
+    public List<Repair> getRepairsByStatus(String status) {
+        return repairRepository.findByStatus(
+                Repair.RepairStatus.valueOf(status)
+        );
+    }
     // ✅ GET ALL
     public List<Repair> getAll() {
         return repairRepository.findAll();

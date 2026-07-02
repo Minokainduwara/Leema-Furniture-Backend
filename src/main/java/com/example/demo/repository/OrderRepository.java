@@ -27,7 +27,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 
     // 📊 STATUS FILTER
     List<Order> findByStatus(Order.OrderStatus status);
-
+    List<Order> findByStatusOrderByCreatedAtDesc(Order.OrderStatus status);
     // 📅 DATE FILTER
     List<Order> findByCreatedAtGreaterThanEqual(LocalDateTime date);
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o")
@@ -37,7 +37,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     int countByUser_Email(String email);
     int countByUser_EmailAndStatus(String email, Order.OrderStatus status);
     List<Order> findTop5ByUser_EmailOrderByCreatedAtDesc(String email);
-
+    long countByStatus(Order.OrderStatus status);
     @Query("""
             SELECT o FROM Order o
             WHERE (:status        IS NULL OR o.status        = :status)

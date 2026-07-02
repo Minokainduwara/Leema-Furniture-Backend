@@ -162,7 +162,16 @@ public class OrderService {
     public List<Order> searchOrders(String query) {
         return orderRepository.findByOrderNumberContainingIgnoreCase(query);
     }
-
+    public List<OrderResponse> getPendingOrders() {
+        return orderRepository
+                .findByStatusOrderByCreatedAtDesc(Order.OrderStatus.PENDING)
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+    public long getPendingOrderCount() {
+        return orderRepository.countByStatus(Order.OrderStatus.PENDING);
+    }
     // ================= STATUS FILTER =================
     public List<Order> getOrdersByStatus(Order.OrderStatus status) {
         return orderRepository.findByStatus(status);

@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.response.InventorySummery;
 import com.example.demo.entity.InventoryLog;
 import com.example.demo.service.InventoryLogService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,10 @@ public class InventoryLogController {
     @Autowired
     private InventoryLogService inventoryLogService;
 
-
+    @GetMapping("/summary")
+    public InventorySummery getSummary() {
+        return inventoryLogService.getInventorySummary();
+    }
     @GetMapping
     public List<InventoryLog> getAllLogs() {
         return inventoryLogService.getAllLogs();
