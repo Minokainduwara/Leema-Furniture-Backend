@@ -3,9 +3,11 @@ package com.example.demo.service;
 import com.example.demo.dto.response.OrderHistoryResponse;
 import com.example.demo.dto.response.OrderItemResponse;
 import com.example.demo.dto.response.OrderResponse;
+import com.example.demo.entity.Notification;
 import com.example.demo.entity.Order;
 import com.example.demo.entity.OrderHistory;
 import com.example.demo.entity.User;
+import com.example.demo.repository.NotificationRepository;
 import com.example.demo.repository.OrderHistoryRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.UserRepository;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,25 +31,41 @@ public class OrderService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     private OrderResponse map(Order order) {
         return OrderResponse.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .status(order.getStatus().name())
+
+                // ✅ ORDER DETAILS
                 .totalAmount(order.getTotalAmount())
+                .discountAmount(order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO)
+                .shippingCost(order.getShippingCost() != null ? order.getShippingCost() :BigDecimal.ZERO)
+                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING")
+
+                // ✅ USER
                 .userId(order.getUser() != null ? order.getUser().getId() : null)
                 .userName(order.getCustomerName())
                 .userEmail(order.getUser() != null ? order.getUser().getEmail() : null)
+
+                // ✅ ITEMS
                 .items(
                         order.getOrderItems().stream().map(item ->
                                 OrderItemResponse.builder()
                                         .id(item.getId())
                                         .productId(item.getProduct().getId())
                                         .productName(item.getProduct().getName())
+                                        .productCode(item.getProduct().getSku())
                                         .quantity(item.getQuantity())
                                         .unitPrice(item.getUnitPrice())
                                         .subtotal(item.getSubtotal())
+
+                                        // ✅ ADD IMAGE (IMPORTANT FOR UI)
+                                        .imageUrl(item.getProduct().getImage())
+
                                         .build()
                         ).toList()
                 )
@@ -120,6 +139,16 @@ public class OrderService {
                 "Status changed from " + oldStatus + " to " + status,
                 saved.getUser()
         );
+        Notification notification = Notification.builder()
+                .user(saved.getUser())
+                .type("ORDER")
+                .title("Order Status Updated")
+                .message("Your order " + saved.getOrderNumber() + " is now " + status)
+                .isRead(false)
+                .orderNumber(saved.getOrderNumber())
+                .build();
+
+        notificationRepository.save(notification);
 
         return saved;
     }
@@ -224,5 +253,40 @@ public class OrderService {
         history.setChangedBy(user);
 
         orderHistoryRepository.save(history);
+    }
+    public List<OrderResponse> getMyOrders(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return orderRepository.findByUser_Id(user.getId())
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+    public List<OrderHistoryResponse> getMyOrderHistory(Integer orderId, String email) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // 🔒 Security check
+        if (!order.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return orderHistoryRepository
+                .findByOrder_IdOrderByCreatedAtDesc(orderId)
+                .stream()
+                .map(h -> OrderHistoryResponse.builder()
+                        .id(h.getId())
+                        .status(h.getStatus())
+                        .message(h.getMessage())
+                        .createdAt(h.getCreatedAt())
+                        .changedBy(h.getChangedBy() != null
+                                ? h.getChangedBy().getName()
+                                : "SYSTEM")
+                        .build()
+                )
+                .toList();
     }
 }

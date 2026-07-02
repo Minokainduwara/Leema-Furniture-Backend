@@ -15,10 +15,12 @@ public class OrderItemResponse {
     private Integer id;
     private Integer productId;
     private String productName;
+    private String productCode;
     private String productImage;
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal subtotal;
     private BigDecimal tax;
     private BigDecimal total;
+    private String imageUrl;
 }

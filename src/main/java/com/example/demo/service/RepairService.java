@@ -18,26 +18,27 @@ public class RepairService {
 
     // ✅ CREATE REPAIR (CORRECT LOGIC)
     public Repair createRepair(
-            Integer userId,
-            Integer productId,
-            Integer orderId,
+
+            String orderNumber,
+            String sku,
             String issueDescription,
-            Double estimatedCost
+            Double estimatedCost,
+            Repair.ServiceType type
     ) {
 
         // 1. Get order
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
         // 2. Get user properly (IMPORTANT FIX)
-        User user = userRepository.findById(order.getUser().getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = order.getUser();
 
         // 3. Product (optional)
         Product product = null;
-        if (productId != null) {
-            product = productRepository.findById(productId)
-                    .orElse(null);
+
+        if (sku != null && !sku.isBlank()) {
+            product = productRepository.findBySku(sku)
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
         }
 
         // 4. Create repair
@@ -48,11 +49,26 @@ public class RepairService {
                 .issueDescription(issueDescription)
                 .estimatedCost(estimatedCost)
                 .status(Repair.RepairStatus.REQUESTED)
+                .type(type)
                 .build();
 
         return repairRepository.save(repair);
     }
+    public Repair updateRepair(Integer id, String status, Double cost) {
 
+        Repair repair = repairRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Repair not found"));
+
+        if (status != null) {
+            repair.setStatus(Repair.RepairStatus.valueOf(status.toUpperCase()));
+        }
+
+        if (cost != null) {
+            repair.setEstimatedCost(cost);
+        }
+
+        return repairRepository.save(repair);
+    }
     // ✅ GET ALL
     public List<Repair> getAll() {
         return repairRepository.findAll();
@@ -104,5 +120,8 @@ public class RepairService {
         repair.setStatus(Repair.RepairStatus.valueOf(status.toUpperCase()));
 
         return repairRepository.save(repair);
+    }
+    public List<Repair> getSellerRequests(Integer sellerId) {
+        return repairRepository.findByHandledBy_Id(sellerId);
     }
 }

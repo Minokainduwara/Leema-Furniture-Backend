@@ -141,11 +141,11 @@ public class CheckoutService {
 
         Order.OrderStatus orderStatus =
                 request.getPaymentMethod().equals("COD")
-                        ? Order.OrderStatus.confirmed
-                        : Order.OrderStatus.pending;
+                        ? Order.OrderStatus.CONFIRMED
+                        : Order.OrderStatus.PENDING;
 
         Order.PaymentStatus paymentStatus =
-                Order.PaymentStatus.pending;
+                Order.PaymentStatus.PENDING;
 
         Order order = Order.builder()
                 .user(user)

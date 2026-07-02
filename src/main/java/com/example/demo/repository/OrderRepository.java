@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
 
@@ -31,7 +32,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Order> findByCreatedAtGreaterThanEqual(LocalDateTime date);
     @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o")
     BigDecimal getTotalSales();
-
+    Optional<Order> findByOrderNumber(String orderNumber);
     long count();
     int countByUser_Email(String email);
     int countByUser_EmailAndStatus(String email, Order.OrderStatus status);

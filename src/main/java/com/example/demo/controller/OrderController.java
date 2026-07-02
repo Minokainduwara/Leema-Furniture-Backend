@@ -26,11 +26,9 @@ public class OrderController {
     }
 
 
-    @GetMapping
-    public List<Order> getUserOrders(@RequestParam Integer userId,
-                                     @RequestParam(defaultValue = "0") int page,
-                                     @RequestParam(defaultValue = "10") int size) {
-        return orderService.getUserOrders(userId, page, size);
+    @GetMapping("/my-orders")
+    public List<OrderResponse> getMyOrders(Authentication auth) {
+        return orderService.getMyOrders(auth.getName());
     }
 
 
@@ -106,5 +104,12 @@ public class OrderController {
     @GetMapping("/user/{userId}/history")
     public List<OrderHistory> getUserOrderHistory(@PathVariable Integer userId) {
         return orderService.getOrderHistoryByUser(userId);
+    }
+    @GetMapping("/my-orders/{orderId}/history")
+    public List<OrderHistoryResponse> getMyOrderHistory(
+            @PathVariable Integer orderId,
+            Authentication auth) {
+
+        return orderService.getMyOrderHistory(orderId, auth.getName());
     }
 }

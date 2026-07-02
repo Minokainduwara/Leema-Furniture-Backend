@@ -18,7 +18,10 @@ public class CategoryController {
 
     @Autowired
     private CategoryService categoryService;
-
+    @PostMapping("/category-discount")
+    public CategoryDiscount createDiscount(@RequestBody CategoryDiscountRequest req) {
+        return categoryService.create(req);
+    }
     // GET /api/categories
     @GetMapping
     public List<CategoryResponse> getAllCategories() {
@@ -40,7 +43,7 @@ public class CategoryController {
     public List<Product> getProductsByCategory(@PathVariable Integer id) {
         return categoryService.getProductsByCategory(id);
     }
-    @PostMapping
+    @PostMapping("/add")
     public Category create(@RequestBody Category category) {
         return categoryService.createCategory(category);
     }

@@ -1,5 +1,7 @@
 package com.example.demo.dto.response;
 
+import java.time.LocalDateTime;
+
 public class NotificationDTO {
     private Integer id;
     private String title;
@@ -9,7 +11,22 @@ public class NotificationDTO {
     private Integer userId;
     private String customerName;
     private String customerEmail;
+    private String orderNumber;
+    private LocalDateTime createdAt;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
     public String getType() {
         return type;
     }
@@ -47,7 +64,7 @@ public class NotificationDTO {
     }
 
     public void setRead(Boolean read) {
-        read = read;
+        this.read = read;
     }
 
     public Integer getUserId() {

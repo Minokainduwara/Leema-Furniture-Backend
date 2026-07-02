@@ -161,8 +161,7 @@ public class Order {
         REFUNDED,
         RETURNED,
         // Lowercase aliases used by CheckoutService — stored as separate DB strings.
-        pending,
-        confirmed
+
     }
 
     public enum PaymentStatus {

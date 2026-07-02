@@ -19,7 +19,11 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-
+    public UserResponse getUserById(Integer id) {
+        return userRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
     public Page<UserResponse> getAllUsers(
             String role,
             String status,

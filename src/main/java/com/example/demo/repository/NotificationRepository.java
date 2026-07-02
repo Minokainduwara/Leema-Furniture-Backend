@@ -8,9 +8,15 @@ import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Integer> {
 
-    List<Notification> findByUserId(Integer userId);
+    // Seller view (ALL notifications)
+    List<Notification> findAllByOrderByCreatedAtDesc();
 
+    // Customer view (ONLY their notifications)
+    List<Notification> findByUser_IdOrderByCreatedAtDesc(Integer userId);
+    List<Notification> findByUserId(Integer userId);
+    List<Notification> findByUserIdAndOrderNumberContaining(Integer userId, String orderNumber);
     long countByUserIdAndIsReadFalse(Integer userId);
     @Query("SELECT n FROM Notification n JOIN FETCH n.user")
     List<Notification> findAllWithUser();
+    List<Notification> findByOrderNumberContainingIgnoreCaseOrderByCreatedAtDesc(String orderNumber);
 }

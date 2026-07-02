@@ -30,6 +30,11 @@ public class UserController {
                 userService.getAllUsers(role, status, search, page, size)
         );
     }
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Integer id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
     // ================= PROFILE =================
     @GetMapping("/me")
     public UserResponse getCurrentUser(Authentication authentication) {

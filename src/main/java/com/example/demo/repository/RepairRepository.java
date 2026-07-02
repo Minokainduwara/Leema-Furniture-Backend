@@ -18,4 +18,7 @@ public interface RepairRepository extends JpaRepository<Repair, Integer> {
 
     // filter by status
     List<Repair> findByStatus(Repair.RepairStatus status);
+
+    List<Repair> findByHandledBy_Id(Integer staffId);
+
 }

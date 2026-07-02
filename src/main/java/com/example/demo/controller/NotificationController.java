@@ -2,8 +2,12 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.response.NotificationDTO;
 import com.example.demo.entity.Notification;
+import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.security.CustomUserDetails;
 import com.example.demo.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,13 +19,27 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private UserRepository userRepository;
+    @GetMapping("/seller")
+    public List<NotificationDTO> getAllNotificationsForSeller() {
+        return notificationService.getAllNotifications();
+    }
+    @GetMapping("/my")
+    public List<NotificationDTO> getMyNotifications(Authentication auth) {
 
-    @GetMapping
-    public List<NotificationDTO> getNotifications() {
-        return notificationService.getUserNotifications();
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        Integer userId = userDetails.getUser().getId();
+
+        return notificationService.getUserNotifications(userId);
     }
 
+    @GetMapping("/seller/search")
+    public List<NotificationDTO> searchSellerNotifications(
+            @RequestParam String orderNumber) {
 
+        return notificationService.searchByOrderForSeller(orderNumber);
+    }
     @PatchMapping("/{id}/read")
     public String markAsRead(@PathVariable Integer id) {
         notificationService.markAsRead(id);
@@ -51,5 +69,12 @@ public class NotificationController {
     @GetMapping("/unread-count")
     public long getUnreadCount(@RequestParam Integer userId) {
         return notificationService.getUnreadCount(userId);
+    }
+    @GetMapping("/search")
+    public List<NotificationDTO> searchNotifications(
+            @RequestParam Integer userId,
+            @RequestParam String orderNumber) {
+
+        return notificationService.searchByOrder(userId, orderNumber);
     }
 }
