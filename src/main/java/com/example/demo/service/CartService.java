@@ -109,11 +109,23 @@ public class CartService {
     }
 
     private CartResponse buildResponse(Cart cart) {
+
         List<CartItem> items = cartItemRepository.findByCart(cart);
 
         List<CartItemResponse> dtos = items.stream().map(it -> {
-            BigDecimal price = it.getAddedPrice() == null ? BigDecimal.ZERO : it.getAddedPrice();
-            BigDecimal line = price.multiply(BigDecimal.valueOf(it.getQuantity()));
+
+            BigDecimal price =
+                    it.getAddedPrice() == null
+                            ? BigDecimal.ZERO
+                            : it.getAddedPrice();
+
+            BigDecimal line =
+                    price.multiply(
+                            BigDecimal.valueOf(
+                                    it.getQuantity()
+                            )
+                    );
+
             return CartItemResponse.builder()
                     .productId(it.getProduct().getId())
                     .productName(it.getProduct().getName())
@@ -122,12 +134,98 @@ public class CartService {
                     .price(price)
                     .lineTotal(line)
                     .build();
+
         }).toList();
+
+        // =================================================
+        // SUBTOTAL
+        // =================================================
 
         BigDecimal total = dtos.stream()
                 .map(CartItemResponse::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return CartResponse.builder().items(dtos).total(total).build();
+        // =================================================
+        // TOTAL WEIGHT
+        // =================================================
+
+        BigDecimal totalWeightKg = BigDecimal.ZERO;
+
+        for (CartItem item : items) {
+
+            BigDecimal weight =
+                    item.getProduct().getWeightKg();
+
+            if (weight == null) {
+                weight = BigDecimal.ZERO;
+            }
+
+            BigDecimal itemWeight =
+                    weight.multiply(
+                            BigDecimal.valueOf(
+                                    item.getQuantity()
+                            )
+                    );
+
+            totalWeightKg =
+                    totalWeightKg.add(itemWeight);
+        }
+
+        // =================================================
+        // SHIPPING COST
+        // =================================================
+
+        BigDecimal shippingCost = BigDecimal.ZERO;
+
+        for (CartItem item : items) {
+
+            BigDecimal weight =
+                    item.getProduct().getWeightKg();
+
+            if (weight == null) {
+                weight = BigDecimal.ZERO;
+            }
+
+            BigDecimal itemShipping;
+
+            if (weight.compareTo(BigDecimal.valueOf(10)) > 0) {
+
+                itemShipping = BigDecimal.valueOf(10000);
+
+            } else if (weight.compareTo(BigDecimal.valueOf(5)) >= 0) {
+
+                itemShipping = BigDecimal.valueOf(5000);
+
+            } else {
+
+                itemShipping = BigDecimal.valueOf(1000);
+            }
+
+            // multiply by quantity
+            itemShipping = itemShipping.multiply(
+                    BigDecimal.valueOf(item.getQuantity())
+            );
+
+            shippingCost = shippingCost.add(itemShipping);
+        }
+
+        // =================================================
+        // GRAND TOTAL
+        // =================================================
+
+        BigDecimal grandTotal =
+                total.add(shippingCost);
+
+        // =================================================
+        // RESPONSE
+        // =================================================
+
+        return CartResponse.builder()
+                .items(dtos)
+                .total(total)
+                .totalWeightKg(totalWeightKg)
+                .shippingCost(shippingCost)
+                .grandTotal(grandTotal)
+                .build();
     }
 }

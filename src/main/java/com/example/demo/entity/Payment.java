@@ -47,7 +47,7 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentStatus status = PaymentStatus.pending;
+    private PaymentStatus status = PaymentStatus.PENDING;
 
     // Payment gateway name
     @Column(length = 50)
@@ -78,11 +78,11 @@ public class Payment {
     }
 
     public enum PaymentStatus {
-        pending,
-        processing,
-        completed,
-        failed,
-        refunded,
-        cancelled
+        PENDING,
+        PROCESSING,
+        COMPLETED,
+        FAILED,
+        REFUNDED,
+        CANCELLED
     }
 }

@@ -34,4 +34,8 @@ public class CheckoutRequest {
     private String paymentMethod;
 
     private String customerNotes;
+
+    private Integer shippingAddressId;
+
+    private Integer billingAddressId;
 }

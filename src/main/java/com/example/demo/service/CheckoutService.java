@@ -11,31 +11,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CheckoutService {
 
     private final UserRepository userRepository;
-
     private final CartRepository cartRepository;
-
     private final CartItemRepository cartItemRepository;
-
     private final OrderRepository orderRepository;
-
     private final OrderItemRepository orderItemRepository;
-
     private final PaymentRepository paymentRepository;
-
     private final ShippingAddressRepository shippingAddressRepository;
-
     private final BillingAddressRepository billingAddressRepository;
-
     private final ProductRepository productRepository;
-
     private final InvoiceRepository invoiceRepository;
-
     private final EmailService emailService;
 
     // =====================================================
@@ -64,76 +55,167 @@ public class CheckoutService {
                 .orElseThrow(() ->
                         new RuntimeException("Cart not found"));
 
-        if (cartItemRepository.findByCart(cart).isEmpty()) {
+        List<CartItem> cartItems =
+                cartItemRepository.findByCart(cart);
+
+        if (cartItems.isEmpty()) {
             throw new RuntimeException("Cart is empty");
         }
 
         // =================================================
-        // CREATE SHIPPING ADDRESS
+        // GET ADDRESSES
         // =================================================
 
-        ShippingAddress shippingAddress =
-                ShippingAddress.builder()
-                        .user(user)
-                        .fullName(request.getFullName())
-                        .phoneNumber(request.getPhoneNumber())
-                        .email(request.getEmail())
-                        .streetAddress(request.getStreetAddress())
-                        .apartmentSuite(request.getApartmentSuite())
-                        .city(request.getCity())
-                        .stateProvince(request.getStateProvince())
-                        .postalCode(request.getPostalCode())
-                        .country(request.getCountry())
-                        .build();
+        ShippingAddress shippingAddress;
+        if (request.getShippingAddressId() != null) {
+            shippingAddress = shippingAddressRepository.findById(request.getShippingAddressId())
+                    .orElseThrow(() -> new RuntimeException("Shipping address not found"));
+        } else {
+            shippingAddress = ShippingAddress.builder()
+                    .user(user)
+                    .fullName(request.getFullName())
+                    .phoneNumber(request.getPhoneNumber())
+                    .email(request.getEmail())
+                    .streetAddress(request.getStreetAddress())
+                    .apartmentSuite(request.getApartmentSuite())
+                    .city(request.getCity())
+                    .stateProvince(request.getStateProvince())
+                    .postalCode(request.getPostalCode())
+                    .country(request.getCountry())
+                    .isDefault(false)
+                    .build();
+            shippingAddress = shippingAddressRepository.save(shippingAddress);
+        }
 
-        shippingAddressRepository.save(shippingAddress);
-
-        // =================================================
-        // CREATE BILLING ADDRESS
-        // =================================================
-
-        BillingAddress billingAddress =
-                BillingAddress.builder()
-                        .user(user)
-                        .fullName(request.getFullName())
-                        .phoneNumber(request.getPhoneNumber())
-                        .email(request.getEmail())
-                        .streetAddress(request.getStreetAddress())
-                        .apartmentSuite(request.getApartmentSuite())
-                        .city(request.getCity())
-                        .stateProvince(request.getStateProvince())
-                        .postalCode(request.getPostalCode())
-                        .country(request.getCountry())
-                        .build();
-
-        billingAddressRepository.save(billingAddress);
+        BillingAddress billingAddress;
+        if (request.getBillingAddressId() != null) {
+            billingAddress = billingAddressRepository.findById(request.getBillingAddressId())
+                    .orElseThrow(() -> new RuntimeException("Billing address not found"));
+        } else {
+            billingAddress = BillingAddress.builder()
+                    .user(user)
+                    .fullName(request.getFullName())
+                    .phoneNumber(request.getPhoneNumber())
+                    .email(request.getEmail())
+                    .streetAddress(request.getStreetAddress())
+                    .apartmentSuite(request.getApartmentSuite())
+                    .city(request.getCity())
+                    .stateProvince(request.getStateProvince())
+                    .postalCode(request.getPostalCode())
+                    .country(request.getCountry())
+                    .isDefault(false)
+                    .build();
+            billingAddress = billingAddressRepository.save(billingAddress);
+        }
 
         // =================================================
         // CALCULATE TOTALS
         // =================================================
 
         BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalWeightKg = BigDecimal.ZERO;
 
-        for (CartItem item : cartItemRepository.findByCart(cart)) {
+        for (CartItem item : cartItems) {
 
-                if (item.getQuantity() > item.getProduct().getStock()) {
+            Product product = item.getProduct();
+
+            // =================================================
+            // DEBUG LOGS
+            // =================================================
+
+            System.out.println(
+                    "PRODUCT = " + product.getName()
+            );
+
+            System.out.println(
+                    "WEIGHT = " + product.getWeightKg()
+            );
+
+            System.out.println(
+                    "QTY = " + item.getQuantity()
+            );
+
+            // =================================================
+            // CHECK STOCK
+            // =================================================
+
+            if (item.getQuantity() > product.getStock()) {
 
                 throw new RuntimeException(
                         "Insufficient stock for product: "
-                        + item.getProduct().getName()
+                                + product.getName()
                 );
-                }
+            }
+
+            // =================================================
+            // ITEM TOTAL
+            // =================================================
 
             BigDecimal itemTotal =
                     item.getAddedPrice()
-                            .multiply(BigDecimal.valueOf(item.getQuantity()));
+                            .multiply(
+                                    BigDecimal.valueOf(
+                                            item.getQuantity()
+                                    )
+                            );
 
             subtotal = subtotal.add(itemTotal);
+
+            // =================================================
+            // ITEM WEIGHT
+            // =================================================
+
+            BigDecimal productWeightKg =
+                    product.getWeightKg();
+
+            if (productWeightKg == null) {
+                productWeightKg = BigDecimal.ZERO;
+            }
+
+            BigDecimal itemWeight =
+                    productWeightKg.multiply(
+                            BigDecimal.valueOf(
+                                    item.getQuantity()
+                            )
+                    );
+
+            totalWeightKg =
+                    totalWeightKg.add(itemWeight);
         }
 
-        BigDecimal shippingCost = BigDecimal.valueOf(500);
+        // =================================================
+        // DEBUG TOTAL WEIGHT
+        // =================================================
 
-        BigDecimal totalAmount = subtotal.add(shippingCost);
+        System.out.println(
+                "TOTAL WEIGHT = " + totalWeightKg
+        );
+
+        // =================================================
+        // SHIPPING COST
+        // =================================================
+
+        BigDecimal shippingCost =
+                calculateShippingCost(totalWeightKg);
+
+        System.out.println(
+                "SHIPPING COST = " + shippingCost
+        );
+
+        // =================================================
+        // FINAL TOTAL
+        // =================================================
+
+        BigDecimal totalAmount =
+                subtotal.add(shippingCost);
+
+        System.out.println(
+                "SUBTOTAL = " + subtotal
+        );
+
+        System.out.println(
+                "FINAL TOTAL = " + totalAmount
+        );
 
         // =================================================
         // CREATE ORDER
@@ -141,11 +223,11 @@ public class CheckoutService {
 
         Order.OrderStatus orderStatus =
                 request.getPaymentMethod().equals("COD")
-                        ? Order.OrderStatus.confirmed
-                        : Order.OrderStatus.pending;
+                        ? Order.OrderStatus.CONFIRMED
+                        : Order.OrderStatus.PENDING;
 
         Order.PaymentStatus paymentStatus =
-                Order.PaymentStatus.pending;
+                Order.PaymentStatus.PENDING;
 
         Order order = Order.builder()
                 .user(user)
@@ -155,7 +237,11 @@ public class CheckoutService {
                 .shippingCost(shippingCost)
                 .totalAmount(totalAmount)
                 .customerNotes(request.getCustomerNotes())
-                .paymentMethod(Order.PaymentMethod.valueOf(request.getPaymentMethod()))
+                .paymentMethod(
+                        Order.PaymentMethod.valueOf(
+                                request.getPaymentMethod()
+                        )
+                )
                 .status(orderStatus)
                 .paymentStatus(paymentStatus)
                 .build();
@@ -166,11 +252,15 @@ public class CheckoutService {
         // CREATE ORDER ITEMS
         // =================================================
 
-        for (CartItem item : cartItemRepository.findByCart(cart)) {
+        for (CartItem item : cartItems) {
 
             BigDecimal itemSubtotal =
                     item.getAddedPrice()
-                            .multiply(BigDecimal.valueOf(item.getQuantity()));
+                            .multiply(
+                                    BigDecimal.valueOf(
+                                            item.getQuantity()
+                                    )
+                            );
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
@@ -181,22 +271,22 @@ public class CheckoutService {
                     .total(itemSubtotal)
                     .build();
 
-            orderItemRepository.save(orderItem);            
+            orderItemRepository.save(orderItem);
         }
 
         // =================================================
         // REDUCE STOCK
         // =================================================
 
-        for (CartItem item : cartItemRepository.findByCart(cart)) {
+        for (CartItem item : cartItems) {
 
-        Product product = item.getProduct();
+            Product product = item.getProduct();
 
-        product.setStock(
-                product.getStock() - item.getQuantity()
-        );
+            product.setStock(
+                    product.getStock() - item.getQuantity()
+            );
 
-        productRepository.save(product);
+            productRepository.save(product);
         }
 
         // =================================================
@@ -208,12 +298,11 @@ public class CheckoutService {
                 .user(user)
                 .amount(totalAmount)
                 .gateway(request.getPaymentMethod())
-                .status(Payment.PaymentStatus.pending)
+                .status(Payment.PaymentStatus.PENDING)
                 .build();
 
         paymentRepository.save(payment);
 
-        
         // =================================================
         // CREATE INVOICE
         // =================================================
@@ -232,17 +321,13 @@ public class CheckoutService {
         // SEND ORDER CONFIRMATION EMAIL
         // =================================================
 
-        emailService.sendOrderConfirmationEmail(
-                order
-        );
+        emailService.sendOrderConfirmationEmail(order);
 
         // =================================================
         // CLEAR CART
         // =================================================
 
-        cartItemRepository.deleteAll(
-                cartItemRepository.findByCart(cart)
-        );
+        cartItemRepository.deleteAll(cartItems);
 
         // =================================================
         // RESPONSE
@@ -254,7 +339,36 @@ public class CheckoutService {
                 .paymentMethod(request.getPaymentMethod())
                 .paymentStatus(order.getPaymentStatus().name())
                 .orderStatus(order.getStatus().name())
+                .subtotal(subtotal)
+                .shippingCost(shippingCost)
+                .totalAmount(totalAmount)
                 .message("Checkout completed successfully")
                 .build();
+    }
+
+    // =====================================================
+    // SHIPPING COST CALCULATION
+    // =====================================================
+
+    private BigDecimal calculateShippingCost(
+            BigDecimal totalWeightKg
+    ) {
+
+        if (totalWeightKg.compareTo(
+                BigDecimal.valueOf(10)
+        ) > 0) {
+
+            return BigDecimal.valueOf(10000);
+
+        } else if (totalWeightKg.compareTo(
+                BigDecimal.valueOf(5)
+        ) >= 0) {
+
+            return BigDecimal.valueOf(5000);
+
+        } else {
+
+            return BigDecimal.valueOf(1000);
+        }
     }
 }

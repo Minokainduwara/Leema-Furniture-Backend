@@ -18,7 +18,14 @@ public class CorsConfig {
 
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedMethod("*");
-        config.addAllowedHeader("*");
+        // Explicitly allow Authorization and common headers so browsers accept preflight
+        config.addAllowedHeader("Authorization");
+        config.addAllowedHeader("Content-Type");
+        config.addAllowedHeader("Accept");
+        config.addAllowedHeader("Origin");
+        config.addAllowedHeader("X-Requested-With");
+        config.addAllowedHeader("Access-Control-Request-Method");
+        config.addAllowedHeader("Access-Control-Request-Headers");
         config.setAllowCredentials(true);
 
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source =
