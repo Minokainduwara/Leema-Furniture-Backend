@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CategoryService {
@@ -27,12 +29,24 @@ public class CategoryService {
     private CategoryDiscountRepository categoryDiscountRepository;
 
 
+    public List<Map<String, Object>> getCategoryStatus() {
 
+        List<Object[]> result = categoryRepository.getCategoryStatusCount();
+
+        return result.stream().map(r -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("status", r[0]);
+            map.put("count", r[1]);
+            return map;
+        }).toList();
+    }
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();
     }
 
-
+    public List<Map<String, Object>> getCategoryDistribution() {
+        return categoryRepository.getCategoryDistribution();
+    }
     public Category getCategoryById(Integer id) {
         return categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));

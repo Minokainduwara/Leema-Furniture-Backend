@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -22,12 +23,19 @@ public class CategoryController {
     public CategoryDiscount createDiscount(@RequestBody CategoryDiscountRequest req) {
         return categoryService.create(req);
     }
+    @GetMapping("/stats/status")
+    public List<Map<String, Object>> getCategoryStatus() {
+        return categoryService.getCategoryStatus();
+    }
     // GET /api/categories
     @GetMapping
     public List<CategoryResponse> getAllCategories() {
         return categoryService.getAllCategoryResponses();
     }
-
+    @GetMapping("/stats/distribution")
+    public List<Map<String, Object>> getCategoryDistribution() {
+        return categoryService.getCategoryDistribution();
+    }
     // GET /api/categories/{id}
     @GetMapping("/{id}")
     public Category getCategoryById(@PathVariable Integer id) {

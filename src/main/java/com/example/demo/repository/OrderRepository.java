@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
@@ -53,7 +54,21 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             @Param("to") LocalDate to,
             @Param("userId")        Integer userId,
             Pageable pageable);
-
+    @Query("""
+SELECT DATE(o.createdAt) as date, COUNT(o) as orders
+FROM Order o
+GROUP BY DATE(o.createdAt)
+ORDER BY DATE(o.createdAt)
+""")
+    List<Map<String, Object>> getOrdersPerDay();
+    @Query("""
+SELECT DATE(o.createdAt) as date, SUM(o.totalAmount) as revenue
+FROM Order o
+WHERE o.paymentStatus = 'COMPLETED'
+GROUP BY DATE(o.createdAt)
+ORDER BY DATE(o.createdAt)
+""")
+    List<Map<String, Object>> getRevenuePerDay();
     // ── Analytics: counts ─────────────────────────────────────────────────────
     @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status")
     long countByStatus(@Param("status") String status);

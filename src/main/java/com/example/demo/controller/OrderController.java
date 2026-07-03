@@ -30,7 +30,10 @@ public class OrderController {
     public List<OrderResponse> getMyOrders(Authentication auth) {
         return orderService.getMyOrders(auth.getName());
     }
-
+    @GetMapping("/stats/per-day")
+    public List<Map<String, Object>> getOrdersPerDay() {
+        return orderService.getOrdersPerDay();
+    }
 
     @GetMapping("/{id}")
     public Order getOrderById(@PathVariable Integer id) {
@@ -49,7 +52,10 @@ public class OrderController {
         orderService.cancelOrder(id);
         return "Order cancelled successfully";
     }
-
+    @GetMapping("/stats/revenue")
+    public List<Map<String, Object>> getRevenuePerDay() {
+        return orderService.getRevenuePerDay();
+    }
 
     @PatchMapping("/{id}/status")
     public Order updateStatus(@PathVariable Integer id,

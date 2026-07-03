@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OrderService {
@@ -169,8 +170,14 @@ public class OrderService {
                 .map(this::map)
                 .toList();
     }
+    public List<Map<String, Object>> getRevenuePerDay() {
+        return orderRepository.getRevenuePerDay();
+    }
     public long getPendingOrderCount() {
         return orderRepository.countByStatus(Order.OrderStatus.PENDING);
+    }
+    public List<Map<String, Object>> getOrdersPerDay() {
+        return orderRepository.getOrdersPerDay();
     }
     // ================= STATUS FILTER =================
     public List<Order> getOrdersByStatus(Order.OrderStatus status) {
