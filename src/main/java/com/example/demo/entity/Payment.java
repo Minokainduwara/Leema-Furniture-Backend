@@ -43,7 +43,7 @@ public class Payment {
     private BigDecimal amount;
 
     @Column(length = 3)
-    private String currency = "USD";
+    private String currency = "LKR";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

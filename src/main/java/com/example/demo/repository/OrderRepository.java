@@ -15,6 +15,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Order> findByUserId(Integer userId);
 
     Page<Order> findByUserId(Integer userId, Pageable pageable);
+    long countByUserId(Integer userId);
     //List<Order> findByHandledById(Integer userId);
     List<Order> findByHandledById(Integer userId);
     List<Order> findByOrderNumberContainingIgnoreCaseOrUser_NameContainingIgnoreCase(

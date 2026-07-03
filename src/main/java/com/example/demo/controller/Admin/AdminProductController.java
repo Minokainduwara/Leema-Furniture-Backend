@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/admin/api/products")
+@RequestMapping("/api/admin/products")
 @CrossOrigin(origins = "*")
 public class AdminProductController {
 
