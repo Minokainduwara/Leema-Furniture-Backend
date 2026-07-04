@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/api/categories")
+@RequestMapping("/api/admin/categories")
 @CrossOrigin(origins = "*")
 public class AdminCategoryController {
 

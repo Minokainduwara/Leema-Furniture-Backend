@@ -26,4 +26,6 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     Long countLowStock();
     @Query("SELECT COUNT(p) FROM Product p")
     Long countAllProducts();
+    long countByUserId(Integer userId);
+    long count();
 }

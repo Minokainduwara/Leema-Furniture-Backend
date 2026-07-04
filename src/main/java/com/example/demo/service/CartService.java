@@ -31,7 +31,7 @@ public class CartService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CartResponse getCart(String email) {
         Cart cart = getOrCreateCart(email);
         return buildResponse(cart);
