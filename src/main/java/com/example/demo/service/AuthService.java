@@ -35,7 +35,7 @@ public class AuthService {
                 .email(req.getEmail())
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .name(req.getName())
-                .phoneNumber(req.getPhoneNumber())
+                .phoneNumber(req.getPhone())
                 .role(User.Role.CUSTOMER)
                 .status(User.Status.ACTIVE)
                 .build();

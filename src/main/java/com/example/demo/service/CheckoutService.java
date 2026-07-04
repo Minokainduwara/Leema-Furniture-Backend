@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
+import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CheckoutService {
@@ -64,7 +65,9 @@ public class CheckoutService {
                 .orElseThrow(() ->
                         new RuntimeException("Cart not found"));
 
-        if (cartItemRepository.findByCart(cart).isEmpty()) {
+        List<CartItem> items = cartItemRepository.findByCart(cart);
+
+        if (items.isEmpty()) {
             throw new RuntimeException("Cart is empty");
         }
 
@@ -114,7 +117,7 @@ public class CheckoutService {
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        for (CartItem item : cartItemRepository.findByCart(cart)) {
+        for (CartItem item : items) {
 
                 if (item.getQuantity() > item.getProduct().getStock()) {
 
@@ -131,10 +134,8 @@ public class CheckoutService {
             subtotal = subtotal.add(itemTotal);
         }
 
-        BigDecimal shippingCost = BigDecimal.valueOf(500);
-
-        BigDecimal totalAmount = subtotal.add(shippingCost);
-
+        BigDecimal shippingCost = BigDecimal.ZERO;
+        BigDecimal totalAmount = subtotal;
         // =================================================
         // CREATE ORDER
         // =================================================
@@ -166,7 +167,7 @@ public class CheckoutService {
         // CREATE ORDER ITEMS
         // =================================================
 
-        for (CartItem item : cartItemRepository.findByCart(cart)) {
+        for (CartItem item : items) {
 
             BigDecimal itemSubtotal =
                     item.getAddedPrice()
@@ -188,7 +189,7 @@ public class CheckoutService {
         // REDUCE STOCK
         // =================================================
 
-        for (CartItem item : cartItemRepository.findByCart(cart)) {
+        for (CartItem item : items) {
 
         Product product = item.getProduct();
 
@@ -240,9 +241,7 @@ public class CheckoutService {
         // CLEAR CART
         // =================================================
 
-        cartItemRepository.deleteAll(
-                cartItemRepository.findByCart(cart)
-        );
+        cartItemRepository.deleteAll(items);
 
         // =================================================
         // RESPONSE

@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class OrderService {
@@ -304,5 +305,8 @@ public class OrderService {
                         .build()
                 )
                 .toList();
+    }
+    public Optional<Order> findById(Integer id) {
+        return orderRepository.findById(id);
     }
 }

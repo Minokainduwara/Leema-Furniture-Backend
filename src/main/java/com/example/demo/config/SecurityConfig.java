@@ -52,8 +52,10 @@ public class SecurityConfig {
                         // AUTH
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/repairs/**")
+
                         .hasAnyRole("ADMIN", "SELLER", "CUSTOMER")
                         // PUBLIC GET APIs
+                        .requestMatchers("/api/service-requests/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
@@ -63,6 +65,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/notifications/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/categories/**")
                         .hasAnyRole("ADMIN", "SELLER")
+                        .requestMatchers("/api/cart/**").authenticated()
+                        .requestMatchers("/api/checkout").authenticated()
                         .requestMatchers("/api/wishlist/**")
                         .authenticated()
 
