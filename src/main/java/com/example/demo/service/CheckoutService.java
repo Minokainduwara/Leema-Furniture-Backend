@@ -45,18 +45,33 @@ public class CheckoutService {
 
     @Transactional
     public CheckoutResponse checkout(String email, CheckoutRequest request) {
+        System.out.println("=== CHECKOUT STARTED ===");
+        System.out.println("User email: " + email);
+        System.out.println("Request: " + request);
 
         // ================= USER =================
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found: " + email));
+                .orElseThrow(() -> {
+                    System.err.println("ERROR: User not found with email: " + email);
+                    return new RuntimeException("User not found: " + email);
+                });
+
+        System.out.println("User found: " + user.getName() + " (ID: " + user.getId() + ")");
 
         // ================= CART =================
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> {
+                    System.err.println("ERROR: Cart not found for user: " + user.getName());
+                    return new RuntimeException("Cart not found for user: " + user.getName());
+                });
+
+        System.out.println("Cart found: ID=" + cart.getId());
 
         List<CartItem> items = cartItemRepository.findByCart(cart);
+        System.out.println("Cart items count: " + items.size());
 
         if (items.isEmpty()) {
+            System.err.println("ERROR: Cart is empty");
             throw new RuntimeException("Cart is empty");
         }
 
@@ -95,9 +110,18 @@ public class CheckoutService {
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (CartItem item : items) {
+            System.out.println("Processing cart item: Product=" + item.getProduct().getName() + 
+                             ", Quantity=" + item.getQuantity() + 
+                             ", Stock=" + item.getProduct().getStock() +
+                             ", Price=" + item.getAddedPrice());
 
             if (item.getQuantity() > item.getProduct().getStock()) {
-                throw new RuntimeException("Insufficient stock: " + item.getProduct().getName());
+                System.err.println("ERROR: Insufficient stock for " + item.getProduct().getName() + 
+                                  ". Requested: " + item.getQuantity() + 
+                                  ", Available: " + item.getProduct().getStock());
+                throw new RuntimeException("Insufficient stock: " + item.getProduct().getName() + 
+                                          ". Available: " + item.getProduct().getStock() + 
+                                          ", Requested: " + item.getQuantity());
             }
 
             BigDecimal itemTotal = item.getAddedPrice()
@@ -105,6 +129,8 @@ public class CheckoutService {
 
             subtotal = subtotal.add(itemTotal);
         }
+        
+        System.out.println("Subtotal: " + subtotal);
 
         BigDecimal shippingCost = BigDecimal.ZERO;
         BigDecimal totalAmount = subtotal;
@@ -115,7 +141,9 @@ public class CheckoutService {
             paymentMethod = Order.PaymentMethod.valueOf(
                     request.getPaymentMethod().trim().toUpperCase()
             );
+            System.out.println("Payment method: " + paymentMethod);
         } catch (Exception e) {
+            System.err.println("ERROR: Invalid payment method: " + request.getPaymentMethod());
             throw new RuntimeException("Invalid payment method: " + request.getPaymentMethod());
         }
 
@@ -186,10 +214,17 @@ public class CheckoutService {
         invoiceRepository.save(invoice);
 
         // ================= EMAIL =================
-        emailService.sendOrderConfirmationEmail(order);
+        try {
+            emailService.sendOrderConfirmationEmail(order);
+            System.out.println("Confirmation email sent");
+        } catch (Exception e) {
+            System.err.println("WARNING: Failed to send email: " + e.getMessage());
+            // Don't fail checkout if email fails
+        }
 
         // ================= CLEAR CART =================
         cartItemRepository.deleteAll(items);
+        System.out.println("Cart cleared");
 
         return CheckoutResponse.builder()
                 .orderId(order.getId())
@@ -199,5 +234,33 @@ public class CheckoutService {
                 .orderStatus(order.getStatus().name())
                 .message("Checkout completed successfully")
                 .build();
+    }
+    
+    // ================= HELPER METHOD FOR DEBUGGING =================
+    public String debugCart(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return "User not found: " + email;
+        }
+        
+        Cart cart = cartRepository.findByUser(user).orElse(null);
+        if (cart == null) {
+            return "Cart not found for user: " + user.getName();
+        }
+        
+        List<CartItem> items = cartItemRepository.findByCart(cart);
+        StringBuilder sb = new StringBuilder();
+        sb.append("Cart ID: ").append(cart.getId()).append("\n");
+        sb.append("Items count: ").append(items.size()).append("\n");
+        
+        for (CartItem item : items) {
+            sb.append("- ").append(item.getProduct().getName())
+              .append(" | Qty: ").append(item.getQuantity())
+              .append(" | Stock: ").append(item.getProduct().getStock())
+              .append(" | Price: ").append(item.getAddedPrice())
+              .append("\n");
+        }
+        
+        return sb.toString();
     }
 }

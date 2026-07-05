@@ -28,7 +28,7 @@ public class AdminDashboardService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getStats() {
-        List<Order> allOrders = orderRepository.findAll();
+        List<Order> allOrders = orderRepository.findAllWithUser();
         List<Product> allProducts = productRepository.findAll();
         List<User> allUsers = userRepository.findAll();
 
@@ -85,7 +85,7 @@ public class AdminDashboardService {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", o.getId());
                     m.put("orderNumber", o.getOrderNumber());
-                    m.put("customerName", o.getUser() == null ? null : o.getUser().getName());
+                    m.put("customerName", o.getUser() != null ? o.getUser().getName() : null);
                     m.put("status", o.getStatus() == null ? null : o.getStatus().name());
                     m.put("paymentStatus", o.getPaymentStatus() == null ? null : o.getPaymentStatus().name());
                     m.put("totalAmount", o.getTotalAmount());
