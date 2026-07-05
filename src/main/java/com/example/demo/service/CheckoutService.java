@@ -44,26 +44,15 @@ public class CheckoutService {
     // =====================================================
 
     @Transactional
-    public CheckoutResponse checkout(
-            String email,
-            CheckoutRequest request
-    ) {
+    public CheckoutResponse checkout(String email, CheckoutRequest request) {
 
-        // =================================================
-        // GET USER
-        // =================================================
-
+        // ================= USER =================
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found: " + email));
 
-        // =================================================
-        // GET CART
-        // =================================================
-
+        // ================= CART =================
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() ->
-                        new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
 
         List<CartItem> items = cartItemRepository.findByCart(cart);
 
@@ -71,82 +60,69 @@ public class CheckoutService {
             throw new RuntimeException("Cart is empty");
         }
 
-        // =================================================
-        // CREATE SHIPPING ADDRESS
-        // =================================================
-
-        ShippingAddress shippingAddress =
-                ShippingAddress.builder()
-                        .user(user)
-                        .fullName(request.getFullName())
-                        .phoneNumber(request.getPhoneNumber())
-                        .email(request.getEmail())
-                        .streetAddress(request.getStreetAddress())
-                        .apartmentSuite(request.getApartmentSuite())
-                        .city(request.getCity())
-                        .stateProvince(request.getStateProvince())
-                        .postalCode(request.getPostalCode())
-                        .country(request.getCountry())
-                        .build();
+        // ================= ADDRESS =================
+        ShippingAddress shippingAddress = ShippingAddress.builder()
+                .user(user)
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .email(request.getEmail())
+                .streetAddress(request.getStreetAddress())
+                .apartmentSuite(request.getApartmentSuite())
+                .city(request.getCity())
+                .stateProvince(request.getStateProvince())
+                .postalCode(request.getPostalCode())
+                .country(request.getCountry())
+                .build();
 
         shippingAddressRepository.save(shippingAddress);
 
-        // =================================================
-        // CREATE BILLING ADDRESS
-        // =================================================
-
-        BillingAddress billingAddress =
-                BillingAddress.builder()
-                        .user(user)
-                        .fullName(request.getFullName())
-                        .phoneNumber(request.getPhoneNumber())
-                        .email(request.getEmail())
-                        .streetAddress(request.getStreetAddress())
-                        .apartmentSuite(request.getApartmentSuite())
-                        .city(request.getCity())
-                        .stateProvince(request.getStateProvince())
-                        .postalCode(request.getPostalCode())
-                        .country(request.getCountry())
-                        .build();
+        BillingAddress billingAddress = BillingAddress.builder()
+                .user(user)
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .email(request.getEmail())
+                .streetAddress(request.getStreetAddress())
+                .apartmentSuite(request.getApartmentSuite())
+                .city(request.getCity())
+                .stateProvince(request.getStateProvince())
+                .postalCode(request.getPostalCode())
+                .country(request.getCountry())
+                .build();
 
         billingAddressRepository.save(billingAddress);
 
-        // =================================================
-        // CALCULATE TOTALS
-        // =================================================
-
+        // ================= TOTAL =================
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (CartItem item : items) {
 
-                if (item.getQuantity() > item.getProduct().getStock()) {
+            if (item.getQuantity() > item.getProduct().getStock()) {
+                throw new RuntimeException("Insufficient stock: " + item.getProduct().getName());
+            }
 
-                throw new RuntimeException(
-                        "Insufficient stock for product: "
-                        + item.getProduct().getName()
-                );
-                }
-
-            BigDecimal itemTotal =
-                    item.getAddedPrice()
-                            .multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal itemTotal = item.getAddedPrice()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
 
             subtotal = subtotal.add(itemTotal);
         }
 
         BigDecimal shippingCost = BigDecimal.ZERO;
         BigDecimal totalAmount = subtotal;
-        // =================================================
-        // CREATE ORDER
-        // =================================================
+
+        // ================= SAFE ENUM HANDLING =================
+        Order.PaymentMethod paymentMethod;
+        try {
+            paymentMethod = Order.PaymentMethod.valueOf(
+                    request.getPaymentMethod().trim().toUpperCase()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid payment method: " + request.getPaymentMethod());
+        }
 
         Order.OrderStatus orderStatus =
-                request.getPaymentMethod().equals("COD")
+                paymentMethod == Order.PaymentMethod.COD
                         ? Order.OrderStatus.CONFIRMED
                         : Order.OrderStatus.PENDING;
-
-        Order.PaymentStatus paymentStatus =
-                Order.PaymentStatus.PENDING;
 
         Order order = Order.builder()
                 .user(user)
@@ -156,22 +132,17 @@ public class CheckoutService {
                 .shippingCost(shippingCost)
                 .totalAmount(totalAmount)
                 .customerNotes(request.getCustomerNotes())
-                .paymentMethod(Order.PaymentMethod.valueOf(request.getPaymentMethod()))
+                .paymentMethod(paymentMethod)
                 .status(orderStatus)
-                .paymentStatus(paymentStatus)
+                .paymentStatus(Order.PaymentStatus.PENDING)
                 .build();
 
         orderRepository.save(order);
 
-        // =================================================
-        // CREATE ORDER ITEMS
-        // =================================================
-
+        // ================= ORDER ITEMS =================
         for (CartItem item : items) {
-
-            BigDecimal itemSubtotal =
-                    item.getAddedPrice()
-                            .multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal itemSubtotal = item.getAddedPrice()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()));
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
@@ -182,43 +153,28 @@ public class CheckoutService {
                     .total(itemSubtotal)
                     .build();
 
-            orderItemRepository.save(orderItem);            
+            orderItemRepository.save(orderItem);
         }
 
-        // =================================================
-        // REDUCE STOCK
-        // =================================================
-
+        // ================= STOCK UPDATE =================
         for (CartItem item : items) {
-
-        Product product = item.getProduct();
-
-        product.setStock(
-                product.getStock() - item.getQuantity()
-        );
-
-        productRepository.save(product);
+            Product product = item.getProduct();
+            product.setStock(product.getStock() - item.getQuantity());
+            productRepository.save(product);
         }
 
-        // =================================================
-        // CREATE PAYMENT
-        // =================================================
-
+        // ================= PAYMENT =================
         Payment payment = Payment.builder()
                 .order(order)
                 .user(user)
                 .amount(totalAmount)
-                .gateway(request.getPaymentMethod())
+                .gateway(paymentMethod.name())
                 .status(Payment.PaymentStatus.pending)
                 .build();
 
         paymentRepository.save(payment);
 
-        
-        // =================================================
-        // CREATE INVOICE
-        // =================================================
-
+        // ================= INVOICE =================
         Invoice invoice = Invoice.builder()
                 .order(order)
                 .payment(payment)
@@ -229,28 +185,16 @@ public class CheckoutService {
 
         invoiceRepository.save(invoice);
 
-        // =================================================
-        // SEND ORDER CONFIRMATION EMAIL
-        // =================================================
+        // ================= EMAIL =================
+        emailService.sendOrderConfirmationEmail(order);
 
-        emailService.sendOrderConfirmationEmail(
-                order
-        );
-
-        // =================================================
-        // CLEAR CART
-        // =================================================
-
+        // ================= CLEAR CART =================
         cartItemRepository.deleteAll(items);
-
-        // =================================================
-        // RESPONSE
-        // =================================================
 
         return CheckoutResponse.builder()
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
-                .paymentMethod(request.getPaymentMethod())
+                .paymentMethod(paymentMethod.name())
                 .paymentStatus(order.getPaymentStatus().name())
                 .orderStatus(order.getStatus().name())
                 .message("Checkout completed successfully")

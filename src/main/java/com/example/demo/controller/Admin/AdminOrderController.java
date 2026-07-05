@@ -1,5 +1,6 @@
 package com.example.demo.controller.Admin;
 
+import com.example.demo.dto.response.OrderResponse;
 import com.example.demo.entity.Order;
 import com.example.demo.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +18,9 @@ public class AdminOrderController {
     private final OrderService orderService;
 
     @GetMapping("/all")
-    public ResponseEntity<List<Order>> getAllOrders() {
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
-
     @PatchMapping("/{id}/status")
     public ResponseEntity<Order> updateOrderStatus(
             @PathVariable Integer id,
