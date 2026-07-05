@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -53,20 +54,21 @@ public class OrderService {
                 .userName(order.getCustomerName())
                 .userEmail(order.getUser() != null ? order.getUser().getEmail() : null)
 
-                // ✅ ITEMS
+                // ✅ ITEMS (null-safe)
                 .items(
+                        order.getOrderItems() == null ? List.of() :
                         order.getOrderItems().stream().map(item ->
                                 OrderItemResponse.builder()
                                         .id(item.getId())
-                                        .productId(item.getProduct().getId())
-                                        .productName(item.getProduct().getName())
-                                        .productCode(item.getProduct().getSku())
+                                        .productId(item.getProduct() != null ? item.getProduct().getId() : null)
+                                        .productName(item.getProduct() != null ? item.getProduct().getName() : null)
+                                        .productCode(item.getProduct() != null ? item.getProduct().getSku() : null)
                                         .quantity(item.getQuantity())
                                         .unitPrice(item.getUnitPrice())
                                         .subtotal(item.getSubtotal())
 
                                         // ✅ ADD IMAGE (IMPORTANT FOR UI)
-                                        .imageUrl(item.getProduct().getImage())
+                                        .imageUrl(item.getProduct() != null ? item.getProduct().getImage() : null)
 
                                         .build()
                         ).toList()
@@ -75,8 +77,9 @@ public class OrderService {
     }
 
     // ================= GET ALL ORDERS =================
+    @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
-        return orderRepository.findAll()
+        return orderRepository.findAllWithItemsAndProducts()
                 .stream()
                 .map(this::map)
                 .toList();
@@ -89,6 +92,7 @@ public class OrderService {
     }
 
     // ================= GET ORDER BY ID =================
+    @Transactional(readOnly = true)
     public Order getOrderById(Integer id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));

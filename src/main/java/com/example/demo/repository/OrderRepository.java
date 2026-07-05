@@ -84,4 +84,15 @@ ORDER BY DATE(o.createdAt)
     // ✅ Search by order number
     List<Order> findByOrderNumberContainingIgnoreCase(String query);
 
+    // ✅ Fetch orders with user initialized
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.user")
+    List<Order> findAllWithUser();
+
+    // ✅ Fetch orders with items and products for analytics
+    @Query("SELECT DISTINCT o FROM Order o " +
+           "LEFT JOIN FETCH o.user " +
+           "LEFT JOIN FETCH o.orderItems oi " +
+           "LEFT JOIN FETCH oi.product")
+    List<Order> findAllWithItemsAndProducts();
+
 }

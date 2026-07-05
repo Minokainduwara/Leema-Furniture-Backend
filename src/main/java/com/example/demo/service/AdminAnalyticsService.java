@@ -32,7 +32,7 @@ public class AdminAnalyticsService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getAnalytics(String period, String from, String to) {
-        List<Order> allOrders = orderRepository.findAll();
+        List<Order> allOrders = orderRepository.findAllWithItemsAndProducts();
         List<Product> allProducts = productRepository.findAll();
         List<User> allUsers = userRepository.findAll();
 
@@ -353,6 +353,7 @@ public class AdminAnalyticsService {
             o.getOrderItems().forEach(item -> {
                 if (item.getProduct() != null && item.getProduct().getCategory() != null) {
                     String catName = item.getProduct().getCategory().getName();
+                    if (catName == null) return;
                     BigDecimal lineTotal = item.getTotal() != null
                             ? item.getTotal()
                             : (item.getUnitPrice() != null && item.getQuantity() != null

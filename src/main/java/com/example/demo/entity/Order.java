@@ -171,7 +171,6 @@ public class Order {
         REFUNDED,
         CANCELLED,
         // Lowercase aliases used by CheckoutService.
-        pending
     }
 
     public enum PaymentMethod {
