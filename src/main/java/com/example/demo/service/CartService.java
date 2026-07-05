@@ -79,6 +79,7 @@ public class CartService {
     @Transactional
     public CartResponse removeItem(String email, RemoveCartItemRequest req) {
         Cart cart = getOrCreateCart(email);
+        Long productId = Long.valueOf(req.getProductId());
         Product product = productRepository.findById(req.getProductId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
 

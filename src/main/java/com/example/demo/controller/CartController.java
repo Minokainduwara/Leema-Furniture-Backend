@@ -35,7 +35,7 @@ public class CartController {
         return ResponseEntity.ok(cartService.updateItem(auth.getName(), req));
     }
 
-    @DeleteMapping("/item")
+    @PostMapping("/remove")
     public ResponseEntity<CartResponse> remove(Authentication auth,
                                                @Valid @RequestBody RemoveCartItemRequest req) {
         return ResponseEntity.ok(cartService.removeItem(auth.getName(), req));
