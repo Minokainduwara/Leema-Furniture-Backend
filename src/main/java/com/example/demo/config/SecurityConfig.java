@@ -51,9 +51,7 @@ public class SecurityConfig {
 
                         // AUTH
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/repairs/**")
-
-                        .hasAnyRole("ADMIN", "SELLER", "CUSTOMER")
+                        .requestMatchers("/api/repairs/**").permitAll()
                         // PUBLIC GET APIs
                         .requestMatchers("/api/service-requests/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
@@ -129,7 +127,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("https://leema-furnitures-ecommerce-applicat.vercel.app"));
+        config.setAllowedOrigins(List.of("https://leema-furnitures-ecommerce-applicat.vercel.app", "https://leema-furnitures-ecommerce-application.vercel.app"));
+        //config.setAllowedOrigins(List.of("http://localhost:5173"));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
