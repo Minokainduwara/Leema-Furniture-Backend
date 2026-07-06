@@ -92,6 +92,19 @@ public class AdminUserService {
     }
 
     // ─────────────────────────────────────────────
+    // UPDATE SELLER DETAILS
+    // ─────────────────────────────────────────────
+    @Transactional
+    public AdminUserResponse updateSellerDetails(Integer id, String nicNumber, String sellerAddress, String nicImage) {
+        User user = findUser(id);
+        user.setNicNumber(nicNumber);
+        user.setSellerAddress(sellerAddress);
+        user.setNicImage(nicImage);
+        userRepository.save(user);
+        return toResponse(user);
+    }
+
+    // ─────────────────────────────────────────────
     // DELETE USER (SOFT DELETE FIXED)
     // ─────────────────────────────────────────────
     @Transactional
@@ -146,6 +159,9 @@ public class AdminUserService {
                 .name(user.getName())
                 .phoneNumber(user.getPhoneNumber())
                 .profilePicture(user.getProfilePicture())
+                .nicNumber(user.getNicNumber())
+                .sellerAddress(user.getSellerAddress())
+                .nicImage(user.getNicImage())
                 .role(user.getRole().name())
                 .status(user.getStatus().name())
                 .createdAt(user.getCreatedAt())
