@@ -29,4 +29,3 @@ public class AdminUserResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-```
