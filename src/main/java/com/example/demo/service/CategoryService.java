@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CategoryService {
@@ -26,24 +28,37 @@ public class CategoryService {
     @Autowired
     private CategoryDiscountRepository categoryDiscountRepository;
 
-    // ===================== GET ALL CATEGORIES =====================
+
+    public List<Map<String, Object>> getCategoryStatus() {
+
+        List<Object[]> result = categoryRepository.getCategoryStatusCount();
+
+        return result.stream().map(r -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("status", r[0]);
+            map.put("count", r[1]);
+            return map;
+        }).toList();
+    }
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();
     }
 
-    // ===================== GET CATEGORY BY ID =====================
+    public List<Map<String, Object>> getCategoryDistribution() {
+        return categoryRepository.getCategoryDistribution();
+    }
     public Category getCategoryById(Integer id) {
         return categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found with id: " + id));
     }
 
-    // ===================== GET PRODUCTS BY CATEGORY =====================
+
     public List<Product> getProductsByCategory(Integer id) {
         Category category = getCategoryById(id);
         return productRepository.findByCategory(category);
     }
 
-    // ===================== CREATE CATEGORY =====================
+
     public CategoryDiscount create(CategoryDiscountRequest req) {
 
         Category category = categoryRepository.findById(req.categoryId)
@@ -80,7 +95,45 @@ public class CategoryService {
     }
     public List<CategoryResponse> getAllCategoryResponses() {
 
-        List<Category> categories = categoryRepository.findAll();
+        List<Category> categories = categoryRepository.findAll(); // 👈 ALL DATA
+
+        return categories.stream().map(category -> {
+
+            CategoryDiscount discount =
+                    categoryDiscountRepository.findActiveDiscount(
+                            category.getId(),
+                            LocalDateTime.now()
+                    );
+
+            CategoryResponse res = new CategoryResponse();
+
+            res.setId(category.getId());
+            res.setName(category.getName());
+            res.setDescription(category.getDescription());
+            res.setSlug(category.getSlug());
+            res.setActive(category.getIsActive()); // 👈 THIS IS IMPORTANT
+
+            if (discount != null) {
+                res.setDiscountType(discount.getDiscountType().name());
+                res.setDiscountValue(discount.getValue());
+            }
+
+            res.setDiscountedProductsCount(
+                    productRepository.countByCategory_Id(category.getId())
+            );
+
+            return res;
+
+        }).toList();
+    }
+    public Category createCategory(Category category) {
+        return categoryRepository.save(category);
+    }
+    public List<CategoryResponse> getActiveCategoryResponses() {
+        List<Category> categories = categoryRepository.findByIsActiveTrue();
+        return mapToResponse(categories);
+    }
+    private List<CategoryResponse> mapToResponse(List<Category> categories) {
 
         return categories.stream().map(category -> {
 
@@ -102,15 +155,14 @@ public class CategoryService {
                 res.setDiscountType(discount.getDiscountType().name());
                 res.setDiscountValue(discount.getValue());
             }
+
             res.setDiscountedProductsCount(
                     productRepository.countByCategory_Id(category.getId())
             );
 
             return res;
+
         }).toList();
     }
 
-    public Category createCategory(Category category) {
-        return categoryRepository.save(category);
-    }
 }

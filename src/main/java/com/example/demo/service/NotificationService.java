@@ -16,8 +16,21 @@ public class NotificationService {
     private NotificationRepository notificationRepository;
 
     // 🔵 GET ALL (DTO version)
-    public List<NotificationDTO> getUserNotifications() {
-        List<Notification> notifications = notificationRepository.findAllWithUser();
+    public List<NotificationDTO> getAllNotifications() {
+        return notificationRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+    public List<NotificationDTO> searchByOrderForSeller(String orderNumber) {
+        return notificationRepository
+                .findByOrderNumberContainingIgnoreCaseOrderByCreatedAtDesc(orderNumber)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+    public List<NotificationDTO> getUserNotifications(Integer userId) {
+        List<Notification> notifications = notificationRepository.findByUserId(userId);
         return notifications.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
@@ -68,7 +81,8 @@ public class NotificationService {
         dto.setTitle(n.getTitle());
         dto.setMessage(n.getMessage());
         dto.setRead(n.getIsRead());
-
+        dto.setOrderNumber(n.getOrderNumber());
+        dto.setCreatedAt(n.getCreatedAt());
         if (n.getUser() != null) {
             dto.setUserId(n.getUser().getId());
             dto.setCustomerName(n.getUser().getName());
@@ -76,5 +90,12 @@ public class NotificationService {
         }
 
         return dto;
+    }
+    public List<NotificationDTO> searchByOrder(Integer userId, String orderNumber) {
+        return notificationRepository
+                .findByUserIdAndOrderNumberContaining(userId, orderNumber)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 }

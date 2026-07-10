@@ -13,6 +13,10 @@ import java.util.List;
 public class CustomUserDetails implements UserDetails {
 
     private final User user;
+    public User getUser() {
+        return user;
+    }
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -36,7 +40,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return user.getStatus() != null && user.getStatus().name().equalsIgnoreCase("active");
+        return user.getStatus() != null && user.getStatus().toString().equalsIgnoreCase("ACTIVE");
     }
 
     @Override
@@ -46,6 +50,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return user.getStatus() != null && user.getStatus().name().equalsIgnoreCase("active");
+        return user.getStatus() != null && user.getStatus().toString().equalsIgnoreCase("ACTIVE");
     }
 }

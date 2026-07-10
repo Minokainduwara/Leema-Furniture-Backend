@@ -5,7 +5,6 @@ import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.service.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -50,14 +49,21 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success(adminUserService.updateUserRole(id, role)));
     }
 
+    @PatchMapping("/{id}/seller-details")
+    public ResponseEntity<?> updateSellerDetails(
+            @PathVariable Integer id,
+            @RequestParam(required = false) String nicNumber,
+            @RequestParam(required = false) String sellerAddress,
+            @RequestParam(required = false) String nicImage) {
+        return ResponseEntity.ok(ApiResponse.success(
+            adminUserService.updateSellerDetails(id, nicNumber, sellerAddress, nicImage)));
+    }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Integer id) {
         adminUserService.deleteUser(id);
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
     }
-
-    
 
     @GetMapping("/{id}/activity")
     public ResponseEntity<?> getUserActivity(@PathVariable Integer id,

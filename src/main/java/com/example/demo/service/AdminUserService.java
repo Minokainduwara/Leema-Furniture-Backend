@@ -28,7 +28,7 @@ public class AdminUserService {
         if (role == null || role.isBlank()) return null;
 
         try {
-            return User.Role.valueOf(role.trim().toLowerCase());
+            return User.Role.valueOf(role.trim().toUpperCase());
         } catch (Exception e) {
             throw new RuntimeException("Invalid role: " + role);
         }
@@ -38,7 +38,7 @@ public class AdminUserService {
         if (status == null || status.isBlank()) return null;
 
         try {
-            return User.Status.valueOf(status.trim().toLowerCase());
+            return User.Status.valueOf(status.trim().toUpperCase());
         } catch (Exception e) {
             throw new RuntimeException("Invalid status: " + status);
         }
@@ -92,6 +92,19 @@ public class AdminUserService {
     }
 
     // ─────────────────────────────────────────────
+    // UPDATE SELLER DETAILS
+    // ─────────────────────────────────────────────
+    @Transactional
+    public AdminUserResponse updateSellerDetails(Integer id, String nicNumber, String sellerAddress, String nicImage) {
+        User user = findUser(id);
+        user.setNicNumber(nicNumber);
+        user.setSellerAddress(sellerAddress);
+        user.setNicImage(nicImage);
+        userRepository.save(user);
+        return toResponse(user);
+    }
+
+    // ─────────────────────────────────────────────
     // DELETE USER (SOFT DELETE FIXED)
     // ─────────────────────────────────────────────
     @Transactional
@@ -106,7 +119,19 @@ public class AdminUserService {
     // ─────────────────────────────────────────────
     // USER ORDERS
     // ─────────────────────────────────────────────
+    public Page<OrderResponse> getUserOrders(Integer userId, Pageable pageable) {
 
+        findUser(userId);
+
+        return orderRepository.findByUserId(userId, pageable)
+                .map(order -> OrderResponse.builder()
+                        .id(order.getId())
+                        .orderNumber(order.getOrderNumber())
+                        .status(order.getStatus().name())
+                        .totalAmount(order.getTotalAmount())
+                        .createdAt(order.getCreatedAt())
+                        .build());
+    }
 
     // ─────────────────────────────────────────────
     // USER ACTIVITY
@@ -134,6 +159,9 @@ public class AdminUserService {
                 .name(user.getName())
                 .phoneNumber(user.getPhoneNumber())
                 .profilePicture(user.getProfilePicture())
+                .nicNumber(user.getNicNumber())
+                .sellerAddress(user.getSellerAddress())
+                .nicImage(user.getNicImage())
                 .role(user.getRole().name())
                 .status(user.getStatus().name())
                 .createdAt(user.getCreatedAt())

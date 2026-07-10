@@ -21,5 +21,5 @@ public class RegisterRequest {
     @NotBlank
     private String name;
 
-    private String phoneNumber;
+    private String phone;
 }

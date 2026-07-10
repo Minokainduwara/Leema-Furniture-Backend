@@ -18,6 +18,11 @@ public class AdminUserResponse {
     private String phoneNumber;
     private String profilePicture;
 
+    // Seller verification fields
+    private String nicNumber;
+    private String sellerAddress;
+    private String nicImage;
+
     private String role;
     private String status;
 

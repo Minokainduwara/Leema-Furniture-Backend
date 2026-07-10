@@ -45,7 +45,8 @@ public class Notification {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-
+    @Column(name = "order_number")
+    private String orderNumber;
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

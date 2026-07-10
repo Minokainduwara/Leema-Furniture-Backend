@@ -54,6 +54,7 @@ public class AdminProductController {
             @RequestParam String description,
             @RequestParam String longDescription,
             @RequestParam String status,
+            @RequestParam String type,
             @RequestParam Integer categoryId,
             @RequestParam(required = false) MultipartFile image
     ) {
@@ -67,6 +68,7 @@ public class AdminProductController {
                 description,
                 longDescription,
                 status,
+                type,
                 categoryId,
                 image
         );

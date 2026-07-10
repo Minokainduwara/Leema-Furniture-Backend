@@ -54,7 +54,14 @@ public class Repair {
 
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
+    @Enumerated(EnumType.STRING)
+    private ServiceType type;
 
+    public enum ServiceType {
+        REPAIR,
+        REFUND,
+        REINSTALLMENT
+    }
     public enum RepairStatus {
         REQUESTED,
         IN_PROGRESS,

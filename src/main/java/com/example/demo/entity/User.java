@@ -37,6 +37,16 @@ public class User {
     @Column(name = "profile_picture", length = 500)
     private String profilePicture;
 
+    // Seller verification fields
+    @Column(name = "nic_number", length = 20)
+    private String nicNumber;
+
+    @Column(name = "seller_address", columnDefinition = "TEXT")
+    private String sellerAddress;
+
+    @Column(name = "nic_image", length = 500)
+    private String nicImage;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role = Role.CUSTOMER;

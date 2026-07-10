@@ -1,25 +1,27 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.response.OrderHistoryResponse;
+import com.example.demo.dto.response.OrderItemResponse;
 import com.example.demo.dto.response.OrderResponse;
 import com.example.demo.entity.Notification;
 import com.example.demo.entity.Order;
-import com.example.demo.entity.OrderItem;
+import com.example.demo.entity.OrderHistory;
 import com.example.demo.entity.User;
-import com.example.demo.entity.Order.OrderStatus;
-import com.example.demo.factory.NotificationFactory;
 import com.example.demo.repository.NotificationRepository;
+import com.example.demo.repository.OrderHistoryRepository;
 import com.example.demo.repository.OrderRepository;
 import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class OrderService {
@@ -28,26 +30,59 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private OrderHistoryRepository orderHistoryRepository;
 
     @Autowired
-    private InventoryLogService inventoryLogService;
-
+    private UserRepository userRepository;
     @Autowired
     private NotificationRepository notificationRepository;
 
-    // ================= STATUS RULES =================
-    private static final Map<OrderStatus, List<OrderStatus>> allowedTransitions = Map.of(
-            OrderStatus.PENDING, List.of(OrderStatus.CONFIRMED, OrderStatus.CANCELLED),
-            OrderStatus.CONFIRMED, List.of(OrderStatus.PROCESSING, OrderStatus.CANCELLED),
-            OrderStatus.PROCESSING, List.of(OrderStatus.SHIPPED, OrderStatus.CANCELLED),
-            OrderStatus.SHIPPED, List.of(OrderStatus.DELIVERED),
-            OrderStatus.DELIVERED, List.of(OrderStatus.RETURNED)
-    );
+    private OrderResponse map(Order order) {
+        return OrderResponse.builder()
+                .id(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .status(order.getStatus().name())
 
-    // ================= GET ALL =================
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+                // ✅ ORDER DETAILS
+                .totalAmount(order.getTotalAmount())
+                .discountAmount(order.getDiscountAmount() != null ? order.getDiscountAmount() : BigDecimal.ZERO)
+                .shippingCost(order.getShippingCost() != null ? order.getShippingCost() :BigDecimal.ZERO)
+                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : "PENDING")
+
+                // ✅ USER
+                .userId(order.getUser() != null ? order.getUser().getId() : null)
+                .userName(order.getCustomerName())
+                .userEmail(order.getUser() != null ? order.getUser().getEmail() : null)
+
+                // ✅ ITEMS (null-safe)
+                .items(
+                        order.getOrderItems() == null ? List.of() :
+                        order.getOrderItems().stream().map(item ->
+                                OrderItemResponse.builder()
+                                        .id(item.getId())
+                                        .productId(item.getProduct() != null ? item.getProduct().getId() : null)
+                                        .productName(item.getProduct() != null ? item.getProduct().getName() : null)
+                                        .productCode(item.getProduct() != null ? item.getProduct().getSku() : null)
+                                        .quantity(item.getQuantity())
+                                        .unitPrice(item.getUnitPrice())
+                                        .subtotal(item.getSubtotal())
+
+                                        // ✅ ADD IMAGE (IMPORTANT FOR UI)
+                                        .imageUrl(item.getProduct() != null ? item.getProduct().getImage() : null)
+
+                                        .build()
+                        ).toList()
+                )
+                .build();
+    }
+
+    // ================= GET ALL ORDERS =================
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAllWithItemsAndProducts()
+                .stream()
+                .map(this::map)
+                .toList();
     }
 
     // ================= GET USER ORDERS =================
@@ -56,7 +91,8 @@ public class OrderService {
         return orderRepository.findByUserId(userId, pageable).getContent();
     }
 
-    // ================= GET BY ID =================
+    // ================= GET ORDER BY ID =================
+    @Transactional(readOnly = true)
     public Order getOrderById(Integer id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
@@ -65,31 +101,21 @@ public class OrderService {
     // ================= CREATE ORDER =================
     public Order createOrder(Order order) {
 
+        if (order.getUser() == null) {
+            throw new RuntimeException("User is required");
+        }
+
         User user = userRepository.findById(order.getUser().getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         order.setUser(user);
+        order.setStatus(Order.OrderStatus.PENDING);
 
-        // link items to order
-        if (order.getOrderItems() != null) {
-            order.getOrderItems().forEach(item -> item.setOrder(order));
-        }
+        Order saved = orderRepository.save(order);
 
-        Order savedOrder = orderRepository.save(order);
+        saveHistory(saved, "PENDING", "Order created", user);
 
-        // 🔻 REDUCE STOCK WHEN ORDER CREATED
-        for (OrderItem item : savedOrder.getOrderItems()) {
-
-            inventoryLogService.createLog(
-                    item.getProduct().getId(),
-                    -item.getQuantity(),
-                    "PURCHASE",
-                    savedOrder.getId(),
-                    "Stock reduced when order placed"
-            );
-        }
-
-        return savedOrder;
+        return saved;
     }
 
     // ================= CANCEL ORDER =================
@@ -97,24 +123,10 @@ public class OrderService {
 
         Order order = getOrderById(id);
 
-        OrderStatus oldStatus = order.getStatus();
+        order.setStatus(Order.OrderStatus.CANCELLED);
+        Order saved = orderRepository.save(order);
 
-        order.setStatus(OrderStatus.CANCELLED);
-        orderRepository.save(order);
-
-        // 🔺 RESTORE STOCK
-        if (oldStatus != OrderStatus.CANCELLED) {
-            for (OrderItem item : order.getOrderItems()) {
-
-                inventoryLogService.createLog(
-                        item.getProduct().getId(),
-                        item.getQuantity(),
-                        "CANCELLED",
-                        order.getId(),
-                        "Stock restored due to cancellation"
-                );
-            }
-        }
+        saveHistory(saved, "CANCELLED", "Order cancelled", saved.getUser());
     }
 
     // ================= UPDATE STATUS =================
@@ -122,97 +134,58 @@ public class OrderService {
 
         Order order = getOrderById(id);
 
-        OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
-        OrderStatus oldStatus = order.getStatus();
+        Order.OrderStatus oldStatus = order.getStatus();
+        order.setStatus(Order.OrderStatus.valueOf(status.toUpperCase()));
 
-        // ✅ VALIDATION
-        List<OrderStatus> allowed = allowedTransitions.get(oldStatus);
+        Order saved = orderRepository.save(order);
 
-        if (allowed == null || !allowed.contains(newStatus)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Invalid status transition: " + oldStatus + " → " + newStatus
-            );
-        }
+        saveHistory(
+                saved,
+                status.toUpperCase(),
+                "Status changed from " + oldStatus + " to " + status,
+                saved.getUser()
+        );
+        Notification notification = Notification.builder()
+                .user(saved.getUser())
+                .type("ORDER")
+                .title("Order Status Updated")
+                .message("Your order " + saved.getOrderNumber() + " is now " + status)
+                .isRead(false)
+                .orderNumber(saved.getOrderNumber())
+                .build();
 
-        order.setStatus(newStatus);
-        Order savedOrder = orderRepository.save(order);
+        notificationRepository.save(notification);
 
-        // 🔥 INVENTORY UPDATE
-        handleInventoryUpdate(oldStatus, newStatus, savedOrder);
-
-        // 🔔 NOTIFICATION
-        if (!oldStatus.equals(newStatus)) {
-
-            Notification notification =
-                    NotificationFactory.createOrderNotification(
-                            order.getUser(),
-                            newStatus.name(),
-                            order.getOrderNumber()
-                    );
-
-            notificationRepository.save(notification);
-        }
-
-        return savedOrder;
-    }
-
-    // ================= INVENTORY LOGIC =================
-    private void handleInventoryUpdate(OrderStatus oldStatus,
-                                       OrderStatus newStatus,
-                                       Order order) {
-
-        System.out.println("🔥 Inventory Update: " + oldStatus + " → " + newStatus);
-
-        for (OrderItem item : order.getOrderItems()) {
-
-            Integer productId = item.getProduct().getId();
-            Integer qty = item.getQuantity();
-
-            // 🔺 CANCELLED → RESTORE STOCK
-            if (newStatus == OrderStatus.CANCELLED &&
-                    oldStatus != OrderStatus.CANCELLED) {
-
-                inventoryLogService.createLog(
-                        productId,
-                        qty,
-                        "CANCELLED",
-                        order.getId(),
-                        "Stock restored due to cancellation"
-                );
-            }
-
-            // 🔺 RETURNED → RESTORE STOCK
-            else if (newStatus == OrderStatus.RETURNED &&
-                    oldStatus != OrderStatus.RETURNED) {
-
-                inventoryLogService.createLog(
-                        productId,
-                        qty,
-                        "RETURNED",
-                        order.getId(),
-                        "Stock restored after return"
-                );
-            }
-        }
+        return saved;
     }
 
     // ================= SELLER ORDERS =================
     public List<Order> getSellerOrders(Integer userId) {
-        return orderRepository.findByHandledById(userId);
+        return orderRepository.findByUser_Id(userId);
     }
 
     // ================= SEARCH =================
     public List<Order> searchOrders(String query) {
-        return orderRepository
-                .findByOrderNumberContainingIgnoreCaseOrUser_NameContainingIgnoreCase(
-                        query,
-                        query
-                );
+        return orderRepository.findByOrderNumberContainingIgnoreCase(query);
     }
-
+    public List<OrderResponse> getPendingOrders() {
+        return orderRepository
+                .findByStatusOrderByCreatedAtDesc(Order.OrderStatus.PENDING)
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+    public List<Map<String, Object>> getRevenuePerDay() {
+        return orderRepository.getRevenuePerDay();
+    }
+    public long getPendingOrderCount() {
+        return orderRepository.countByStatus(Order.OrderStatus.PENDING);
+    }
+    public List<Map<String, Object>> getOrdersPerDay() {
+        return orderRepository.getOrdersPerDay();
+    }
     // ================= STATUS FILTER =================
-    public List<Order> getOrdersByStatus(OrderStatus status) {
+    public List<Order> getOrdersByStatus(Order.OrderStatus status) {
         return orderRepository.findByStatus(status);
     }
 
@@ -221,25 +194,18 @@ public class OrderService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (type.equalsIgnoreCase("TODAY")) {
-            return orderRepository.findByCreatedAtGreaterThanEqual(
-                    now.toLocalDate().atStartOfDay()
-            );
-        }
+        return switch (type.toLowerCase()) {
+            case "today" ->
+                    orderRepository.findByCreatedAtAfter(now.toLocalDate().atStartOfDay());
 
-        if (type.equalsIgnoreCase("WEEK")) {
-            return orderRepository.findByCreatedAtGreaterThanEqual(
-                    now.minusDays(7)
-            );
-        }
+            case "week" ->
+                    orderRepository.findByCreatedAtAfter(now.minusDays(7));
 
-        if (type.equalsIgnoreCase("MONTH")) {
-            return orderRepository.findByCreatedAtGreaterThanEqual(
-                    now.minusMonths(1)
-            );
-        }
+            case "month" ->
+                    orderRepository.findByCreatedAtAfter(now.minusMonths(1));
 
-        return List.of();
+            default -> orderRepository.findAll();
+        };
     }
 
     // ================= ORDER STATUS =================
@@ -254,27 +220,108 @@ public class OrderService {
     }
 
     // ================= PAYMENT STATUS =================
-    public Order updatePaymentStatus(Integer id, String status) {
+    public Order updatePaymentStatus(Integer id, String paymentStatus) {
 
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+        Order order = getOrderById(id);
 
-        order.setPaymentStatus(Order.PaymentStatus.valueOf(status.toUpperCase()));
+        order.setPaymentStatus(Order.PaymentStatus.valueOf(paymentStatus.toUpperCase()));
+        Order saved = orderRepository.save(order);
 
-        return orderRepository.save(order);
+        saveHistory(saved, paymentStatus, "Payment updated", saved.getUser());
+
+        return saved;
     }
+
+    // ================= RECENT ORDERS =================
     public List<OrderResponse> getRecentOrders(String email) {
 
-        List<Order> orders =
-                orderRepository.findTop5ByUser_EmailOrderByCreatedAtDesc(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return orders.stream()
-                .map(order -> new OrderResponse(
-                        order.getId(),
-                        order.getOrderNumber(),
-                        order.getStatus().name(),
-                        order.getTotalAmount()
-                ))
+        return orderRepository.findTop5ByUser_IdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .map(o -> OrderResponse.builder()
+                        .id(o.getId())
+                        .orderNumber(o.getOrderNumber())
+                        .status(o.getStatus().name())
+                        .totalAmount(o.getTotalAmount())
+                        .build()
+                )
                 .toList();
+    }
+
+    // ================= ORDER HISTORY BY ORDER ID =================
+    public List<OrderHistoryResponse> getOrderHistoryByOrderId(Integer orderId) {
+
+        return orderHistoryRepository
+                .findByOrder_IdOrderByCreatedAtDesc(orderId)
+                .stream()
+                .map(h -> OrderHistoryResponse.builder()
+                        .id(h.getId())
+                        .status(h.getStatus())
+                        .message(h.getMessage())
+                        .changedBy(h.getChangedBy() != null
+                                ? h.getChangedBy().getName()
+                                : "SYSTEM")
+                        .createdAt(h.getCreatedAt())
+                        .build()
+                )
+                .toList();
+    }
+
+    // ================= USER HISTORY =================
+    public List<OrderHistory> getOrderHistoryByUser(Integer userId) {
+        return orderHistoryRepository
+                .findByOrder_User_IdOrderByCreatedAtDesc(userId);
+    }
+
+    // ================= SAVE HISTORY (IMPORTANT FIX) =================
+    private void saveHistory(Order order, String status, String message, User user) {
+
+        OrderHistory history = new OrderHistory();
+        history.setOrder(order);
+        history.setStatus(status);
+        history.setMessage(message);
+        history.setChangedBy(user);
+
+        orderHistoryRepository.save(history);
+    }
+    public List<OrderResponse> getMyOrders(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return orderRepository.findByUser_Id(user.getId())
+                .stream()
+                .map(this::map)
+                .toList();
+    }
+    public List<OrderHistoryResponse> getMyOrderHistory(Integer orderId, String email) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // 🔒 Security check
+        if (!order.getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return orderHistoryRepository
+                .findByOrder_IdOrderByCreatedAtDesc(orderId)
+                .stream()
+                .map(h -> OrderHistoryResponse.builder()
+                        .id(h.getId())
+                        .status(h.getStatus())
+                        .message(h.getMessage())
+                        .createdAt(h.getCreatedAt())
+                        .changedBy(h.getChangedBy() != null
+                                ? h.getChangedBy().getName()
+                                : "SYSTEM")
+                        .build()
+                )
+                .toList();
+    }
+    public Optional<Order> findById(Integer id) {
+        return orderRepository.findById(id);
     }
 }

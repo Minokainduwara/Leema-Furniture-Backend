@@ -22,6 +22,9 @@ public class CheckoutController {
     @PostMapping
     public ResponseEntity<CheckoutResponse> checkout(Authentication auth,
                                                      @Valid @RequestBody CheckoutRequest req) {
+
+        System.out.println("AUTH USER: " + auth);
+
         return ResponseEntity.ok(checkoutService.checkout(auth.getName(), req));
     }
 }

@@ -2,34 +2,35 @@ package com.example.demo.dto.request;
 
 public class RepairRequest {
 
-    private Integer userId;
-    private Integer productId;
-    private Integer orderId;
+
+    private String orderNumber;
+    private String sku;
     private String issueDescription;
-    private Double estimatedCost;
 
-    public Integer getUserId() {
-        return userId;
+    private String type;
+
+    public String getType() {
+        return type;
     }
 
-    public void setUserId(Integer userId) {
-        this.userId = userId;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public Integer getProductId() {
-        return productId;
+    public String getOrderNumber() {
+        return orderNumber;
     }
 
-    public void setProductId(Integer productId) {
-        this.productId = productId;
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
     }
 
-    public Integer getOrderId() {
-        return orderId;
+    public String getSku() {
+        return sku;
     }
 
-    public void setOrderId(Integer orderId) {
-        this.orderId = orderId;
+    public void setSku(String sku) {
+        this.sku = sku;
     }
 
     public String getIssueDescription() {
@@ -40,11 +41,5 @@ public class RepairRequest {
         this.issueDescription = issueDescription;
     }
 
-    public Double getEstimatedCost() {
-        return estimatedCost;
-    }
 
-    public void setEstimatedCost(Double estimatedCost) {
-        this.estimatedCost = estimatedCost;
-    }
 }

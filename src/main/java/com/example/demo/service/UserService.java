@@ -6,6 +6,9 @@ import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import org.hibernate.annotations.SecondaryRow;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.example.demo.dto.response.UserResponse;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,41 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    public UserResponse getUserById(Integer id) {
+        return userRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+    public Page<UserResponse> getAllUsers(
+            String role,
+            String status,
+            String search,
+            int page,
+            int size
+    ) {
+
+        User.Role roleEnum = null;
+        User.Status statusEnum = null;
+
+        if (role != null) {
+            roleEnum = User.Role.valueOf(role.toUpperCase());
+        }
+
+        if (status != null) {
+            statusEnum = User.Status.valueOf(status.toUpperCase());
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<User> users = userRepository.findWithFilters(
+                roleEnum,
+                statusEnum,
+                search,
+                pageable
+        );
+
+        return users.map(this::mapToResponse);
+    }
     public UserResponse getProfile(String email) {
 
         User user = userRepository.findByEmail(email)

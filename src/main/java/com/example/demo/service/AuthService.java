@@ -3,7 +3,6 @@ package com.example.demo.service;
 import com.example.demo.dto.request.RegisterRequest;
 import com.example.demo.dto.response.AuthResponse;
 import com.example.demo.entity.RefreshToken;
-import com.example.demo.service.RefreshTokenService;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtService;
@@ -13,8 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-
-import java.util.Optional;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +24,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
 
+    // ================= REGISTER =================
     public AuthResponse register(RegisterRequest req) {
 
         if (userRepository.existsByEmail(req.getEmail())) {
@@ -36,15 +35,22 @@ public class AuthService {
                 .email(req.getEmail())
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .name(req.getName())
-                .phoneNumber(req.getPhoneNumber())
+                .phoneNumber(req.getPhone())
                 .role(User.Role.CUSTOMER)
                 .status(User.Status.ACTIVE)
                 .build();
 
         userRepository.save(user);
 
-        // Auto login
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(
+                user.getEmail(),
+                Map.of(
+                        "userId", user.getId(),
+                        "name", user.getName(),
+                        "role", user.getRole().name()
+                )
+        );
+
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
         return new AuthResponse(
@@ -57,13 +63,25 @@ public class AuthService {
         );
     }
 
+    // ================= LOGIN =================
     public AuthResponse login(String email, String password) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, password)
+        );
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
 
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(
+                user.getEmail(),
+                Map.of(
+                        "userId", user.getId(),
+                        "name", user.getName(),
+                        "role", user.getRole().name()
+                )
+        );
+
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
         return new AuthResponse(
@@ -76,46 +94,47 @@ public class AuthService {
         );
     }
 
+
     public AuthResponse refresh(String refreshTokenStr) {
 
-        // 1. Validate existing token
         RefreshToken oldToken = refreshTokenService.verifyToken(refreshTokenStr);
-
         User user = oldToken.getUser();
 
-        // 2. Revoke old token
         refreshTokenService.revokeToken(oldToken);
 
-        // 3. Create new refresh token
         RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
 
-        // 4. Generate new access token
         String newAccessToken = jwtService.generateToken(
                 user.getEmail(),
-                user.getRole().name()
+                Map.of(
+                        "userId", user.getId(),
+                        "name", user.getName(),
+                        "role", user.getRole().name()
+                )
         );
 
         return new AuthResponse(
                 newAccessToken,
-                newRefreshToken.getToken(), // NEW TOKEN
+                newRefreshToken.getToken(),
                 "Bearer",
                 user.getId(),
                 user.getEmail(),
                 user.getRole().name()
         );
     }
+
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+
     public void logout(String refreshTokenStr) {
         try {
             RefreshToken refreshToken = refreshTokenService.verifyToken(refreshTokenStr);
             refreshTokenService.revokeToken(refreshToken);
-        } catch (Exception ex) {
-            // already invalid or expired → ignore
+        } catch (Exception ignored) {
         }
     }
 }

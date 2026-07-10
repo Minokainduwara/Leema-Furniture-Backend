@@ -1,4 +1,5 @@
 package com.example.demo.entity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,7 +25,8 @@ public class OrderHistory {
     // History belongs to one order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @JsonIgnore
+    private Order order;;
 
     @Column(nullable = false, length = 50)
     private String status;
@@ -35,8 +37,8 @@ public class OrderHistory {
     // User/admin who changed the order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "changed_by")
+    @JsonIgnore
     private User changedBy;
-
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

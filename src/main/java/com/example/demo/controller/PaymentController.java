@@ -50,12 +50,18 @@ public class PaymentController {
     @PostMapping("/payhere/initiate")
     public ResponseEntity<?> initiate(@RequestBody Map<String, Object> body) {
         try {
-            String orderId = String.valueOf(body.get("orderId"));
-            String currency = String.valueOf(body.getOrDefault("currency", "LKR"));
+            Integer orderId = Integer.parseInt(String.valueOf(body.get("orderId")));
 
-            // Format amount exactly the way PayHere expects: two decimal places
-            BigDecimal amountBd = new BigDecimal(String.valueOf(body.get("amount")))
+            // ✅ FETCH ORDER FROM DB
+            Order order = orderService.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Order not found"));
+
+            String currency = "LKR";
+
+            // ✅ GET AMOUNT FROM ORDER (NOT FRONTEND)
+            BigDecimal amountBd = order.getTotalAmount()
                     .setScale(2, RoundingMode.HALF_UP);
+
             String amount = amountBd.toPlainString();
 
             String hashedSecret = md5(merchantSecret).toUpperCase();
@@ -73,8 +79,10 @@ public class PaymentController {
             response.put("notifyUrl", notifyUrl);
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Failed to build PayHere payload: " + e.getMessage());
+            return ResponseEntity.status(500)
+                    .body("Failed to build PayHere payload: " + e.getMessage());
         }
     }
 
